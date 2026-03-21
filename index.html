@@ -531,7 +531,17 @@ let currentView = 'today', histTab = 'log', histDays = 30;
 let lastDateKey = '', softTimer = null;
 
 // ── DATE HELPERS ──────────────────────────────────────────────────────────────
-function edmontonNow() { return new Date(new Date().toLocaleString('en-CA', { timeZone: TZ })); }
+function edmontonNow() {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+  }).formatToParts(now);
+  const p = {};
+  parts.forEach(({ type, value }) => { p[type] = value; });
+  return new Date(parseInt(p.year), parseInt(p.month)-1, parseInt(p.day),
+                  parseInt(p.hour), parseInt(p.minute), parseInt(p.second));
+}
 function getDateKey(d) { const dt = d || edmontonNow(); return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`; }
 function todayKey() { return getDateKey(); }
 
