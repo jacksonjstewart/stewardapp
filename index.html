@@ -57,16 +57,16 @@
     .nav-btn.active{color:#e8e8e8;border-bottom-color:#e8e8e8}.nav-btn:hover:not(.active){color:#555}
     #edit-btn,#wr-peek-btn{background:none;border:1px solid #1e1e1e;border-radius:8px;padding:9px 16px;font-family:"Outfit",sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;color:#444;cursor:pointer;transition:all .2s;white-space:nowrap}
     #edit-btn:hover,#wr-peek-btn:hover{border-color:#333;color:#888}
-    #weather-widget{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:10px;color:#333;letter-spacing:.5px;min-height:16px}
-    #weather-icon{font-size:14px;line-height:1}
-    #weather-temp{font-family:"Cormorant Garamond",serif;font-size:15px;font-weight:300;color:#555}
-    #weather-desc{font-size:9px;color:#2a2a2a;letter-spacing:1px;text-transform:uppercase}
+    #weather-widget{display:flex;align-items:baseline;gap:8px;min-height:16px}
+    #weather-icon{font-size:15px;line-height:1;align-self:center}
+    #weather-temp{font-family:"Cormorant Garamond",serif;font-size:19px;font-weight:300;color:#666}
+    #weather-desc{font-size:9px;color:#2a2a2a;letter-spacing:1px;text-transform:uppercase;align-self:center}
     .view-label{font-size:10px;font-weight:700;letter-spacing:4px;color:#2a2a2a;margin-bottom:16px}
     .identity-btn{background:none;border:1px solid #1e1e1e;border-radius:6px;cursor:pointer;font-family:"Outfit",sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#2a2a2a;padding:5px 10px;transition:all .2s}
     .identity-btn:hover{border-color:#333;color:#555}
     .identity-btn.active{border-color:#e8e8e8;color:#e8e8e8}
-    .identity-btn.katelyn.active{border-color:#f4a4b8;color:#f4a4b8}
-    .identity-btn.jackson.active{border-color:#7dd3fc;color:#7dd3fc}
+    .identity-btn.katelyn.active{border-color:#c084fc;color:#c084fc}
+    .identity-btn.jackson.active{border-color:#4ade80;color:#4ade80}
     .section-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;margin-top:20px}
     .section-pip{width:2.5px;height:14px;border-radius:99px;opacity:.8}
     .section-label{font-size:10px;font-weight:700;color:#666;letter-spacing:3px}
@@ -121,11 +121,10 @@
     .sec-bar-fill{height:100%;border-radius:99px;transition:width .6s ease}
     .sec-bar-counts{font-size:9px;color:#333;margin-top:3px;text-align:right;letter-spacing:1px}
     #footer-note{font-size:9px;color:#1e1e1e;text-align:center;letter-spacing:1px;margin-top:16px;padding-top:16px;border-top:1px solid #111}
-    #left-footer{display:flex;justify-content:space-between;align-items:flex-end;margin-top:auto;padding-top:24px;border-top:1px solid #0f0f0f}
-    #checkin-area{display:flex;flex-direction:column;gap:6px}
-    #checkin-indicator{font-size:9px;color:#2a2a2a;letter-spacing:1.5px}
-    #identity-bar{display:flex;gap:6px}
-    #version-tag{font-size:9px;color:#1a1a1a;letter-spacing:2px;padding-bottom:2px}
+    #left-footer{display:flex;justify-content:flex-end;align-items:center;margin-top:auto;padding-top:24px;border-top:1px solid #0f0f0f}
+    #version-tag{font-size:9px;color:#1a1a1a;letter-spacing:2px}
+    #checkin-indicator{font-size:10px;color:#444;letter-spacing:.2px;text-align:center;margin-top:12px;min-height:14px}
+    #checkin-indicator button{background:none;border:none;cursor:pointer;font-family:"Outfit",sans-serif;font-size:10px;padding:0;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px}
     #loading-state{font-size:13px;color:#2a2a2a;padding:20px 0;letter-spacing:1px}
     #empty-state{display:none;padding:28px 0 8px;text-align:center}
     .week-strip{display:flex;gap:6px;margin-bottom:24px;border-bottom:1px solid #1a1a1a;padding-bottom:16px}
@@ -182,8 +181,8 @@
     #identity-modal-title{font-size:14px;font-weight:300;color:#888;letter-spacing:1px;margin-bottom:24px}
     .identity-modal-btn{display:block;width:100%;background:none;border:1px solid #252525;border-radius:8px;padding:14px;font-family:"Outfit",sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;color:#444;cursor:pointer;margin-bottom:10px;transition:all .2s}
     .identity-modal-btn:hover{border-color:#555;color:#888}.identity-modal-btn:last-child{margin-bottom:0}
-    .identity-modal-btn.katelyn{border-color:#4a2030;color:#f4a4b8}
-    .identity-modal-btn.jackson{border-color:#1a3a4a;color:#7dd3fc}
+    .identity-modal-btn.katelyn{border-color:#5a2a7a;color:#c084fc}
+    .identity-modal-btn.jackson{border-color:#1a4a1a;color:#4ade80}
     #domain-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:50;align-items:center;justify-content:center}
     #domain-modal{background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:28px;width:100%;max-width:440px;max-height:80vh;overflow-y:auto;margin:0 20px}
     #dm-header{margin-bottom:20px}
@@ -414,11 +413,11 @@
             <div id="clock-date">March 21, 2026</div>
             <div id="clock-time">12:00<span>am</span></div>
           </div>
-        </div>
-        <div id="weather-widget">
-          <span id="weather-icon"></span>
-          <span id="weather-temp"></span>
-          <span id="weather-desc"></span>
+          <div id="weather-widget">
+            <span id="weather-icon"></span>
+            <span id="weather-temp"></span>
+            <span id="weather-desc"></span>
+          </div>
         </div>
         <div id="sync-status">LOADING&hellip;</div>
       </div>
@@ -469,13 +468,6 @@
     </div>
 
     <div id="left-footer">
-      <div id="checkin-area">
-        <div id="checkin-indicator"></div>
-        <div id="identity-bar">
-          <button class="identity-btn katelyn" data-identity="Katelyn" onclick="setIdentity('Katelyn')">KATELYN</button>
-          <button class="identity-btn jackson" data-identity="Jackson" onclick="setIdentity('Jackson')">JACKSON</button>
-        </div>
-      </div>
       <div id="version-tag">STEWARD &middot; v1.0</div>
     </div>
   </div>
@@ -515,6 +507,7 @@
       </div>
       <div id="sec-bars"></div>
       <div id="footer-note">Syncs from Google Sheets &middot; Resets daily &middot; Tap to mark done</div>
+      <div id="checkin-indicator"></div>
     </div>
   </div>
 </div>
@@ -1146,7 +1139,12 @@ function setIdentity(name, fromModal = false) {
 }
 function updateCheckinIndicator() {
   const el = document.getElementById('checkin-indicator');
-  if (el) el.textContent = identity === 'The Stewart Family' ? '' : 'CHECKED IN AS ' + identity.toUpperCase();
+  if (!el) return;
+  if (identity === 'The Stewart Family') { el.innerHTML = ''; return; }
+  const col = identity === 'Jackson' ? '#4ade80' : '#c084fc';
+  el.innerHTML = 'Checked in as '
+    + '<button onclick="document.getElementById(\'identity-modal-overlay\').style.display=\'flex\'" style="color:' + col + '">'
+    + identity + '</button>';
 }
 function loadIdentity() {
   try {
