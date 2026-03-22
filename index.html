@@ -116,9 +116,9 @@
     .sec-bar-fill{height:100%;border-radius:99px;transition:width .6s ease}
     .sec-bar-counts{font-size:9px;color:#333;margin-top:3px;text-align:right;letter-spacing:1px}
     #footer-note{font-size:9px;color:#1e1e1e;text-align:center;letter-spacing:1px;margin-top:16px;padding-top:16px;border-top:1px solid #111}
-    #left-footer{display:flex;justify-content:flex-end;align-items:center;margin-top:auto;padding-top:24px;border-top:1px solid #0f0f0f}
+    #left-footer{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:24px;border-top:1px solid #0f0f0f}
     #version-tag{font-size:9px;color:#1a1a1a;letter-spacing:2px}
-    #checkin-indicator{font-size:10px;color:#444;letter-spacing:.2px;text-align:center;margin-top:12px;min-height:14px}
+    #checkin-indicator{font-size:10px;color:#444;letter-spacing:.2px;min-height:14px}
     #checkin-indicator button{background:none;border:none;cursor:pointer;font-family:"Outfit",sans-serif;font-size:10px;padding:0;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px}
     #loading-state{font-size:13px;color:#2a2a2a;padding:20px 0;letter-spacing:1px}
     #empty-state{display:none;padding:28px 0 8px;text-align:center}
@@ -463,6 +463,7 @@
     </div>
 
     <div id="left-footer">
+      <div id="checkin-indicator"></div>
       <div id="version-tag">STEWARD &middot; v1.0</div>
     </div>
   </div>
@@ -502,7 +503,6 @@
       </div>
       <div id="sec-bars"></div>
       <div id="footer-note">Syncs from Google Sheets &middot; Resets daily &middot; Tap to mark done</div>
-      <div id="checkin-indicator"></div>
     </div>
   </div>
 </div>
@@ -766,7 +766,10 @@ async function loadServerHistory(days) {
 }
 function setStatus(msg, cls) {
   const el = document.getElementById('sync-status');
-  if (el) { el.textContent = msg; el.className = cls || ''; }
+  if (!el) return;
+  el.className = cls || '';
+  const dotCol = cls === 'ok' ? '#4ade80' : cls === 'syncing' ? '#facc15' : cls === 'error' ? '#f87171' : '#444';
+  el.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + dotCol + ';margin-right:5px;vertical-align:middle;flex-shrink:0"></span>' + msg;
 }
 
 // ── UTILITIES ─────────────────────────────────────────────────────────────────
