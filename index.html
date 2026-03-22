@@ -19,14 +19,14 @@
     body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:999;opacity:0.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");background-repeat:repeat;background-size:128px 128px}
     ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:#1e1e1e;border-radius:99px}
     #splash{position:fixed;inset:0;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100}
-    #splash-wordmark{display:flex;flex-direction:column;align-items:center}
-    #splash-the{font-family:"Cormorant Garamond",serif;font-size:14px;font-weight:300;font-style:italic;color:#fff;letter-spacing:2px;opacity:.5}
-    #splash-name{font-family:"Cormorant Garamond",serif;font-size:80px;font-weight:300;color:#fff;letter-spacing:-2px;line-height:.9}
+    #splash-wordmark{display:inline-flex;flex-direction:column;align-items:flex-start}
+    #splash-the{font-family:"Cormorant Garamond",serif;font-size:13px;font-weight:300;font-style:italic;color:#fff;letter-spacing:1.5px;line-height:1;padding-left:2px;opacity:.75}
+    #splash-name{font-family:"Cormorant Garamond",serif;font-size:80px;font-weight:300;color:#fff;letter-spacing:-2px;line-height:.92}
     #splash-family-wrap{align-self:flex-end;display:flex;align-items:baseline;gap:3px}
-    #splash-family{font-family:"Cormorant Garamond",serif;font-size:24px;font-weight:300;color:#fff;letter-spacing:1px;opacity:.8}
-    #splash-copy{font-family:"Cormorant Garamond",serif;font-size:12px;font-weight:300;color:#fff;opacity:.3}
-    #splash-rule{width:80px;height:1px;background:linear-gradient(90deg,transparent,#2a2a2a,transparent);margin:16px 0}
-    #splash-sub{font-family:"Outfit",sans-serif;font-size:9px;font-weight:700;letter-spacing:4px;color:#2a2a2a}
+    #splash-family{font-family:"Cormorant Garamond",serif;font-size:26px;font-weight:300;color:#fff;letter-spacing:1px;opacity:.85}
+    #splash-copy{font-family:"Cormorant Garamond",serif;font-size:12px;font-weight:300;color:#fff;opacity:.4}
+    #splash-rule{width:100%;height:1px;background:linear-gradient(90deg,transparent,#2a2a2a,transparent);margin:14px 0}
+    #splash-sub{font-family:"Outfit",sans-serif;font-size:9px;font-weight:700;letter-spacing:4px;color:#2a2a2a;align-self:center}
     #offline-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:#1a0a0a;border-bottom:1px solid rgba(239,68,68,.3);padding:8px 20px;text-align:center;font-size:10px;font-weight:500;letter-spacing:2px;color:#ef4444}
     #offline-banner.visible{display:block}
     #top-bar{position:fixed;top:0;left:0;right:0;height:2px;z-index:50;background:transparent}
@@ -56,14 +56,17 @@
     .nav-btn{background:none;border:none;cursor:pointer;font-family:"Outfit",sans-serif;font-size:10px;font-weight:700;letter-spacing:2.5px;color:#2a2a2a;padding:0 0 12px;margin-right:28px;transition:color .2s;border-bottom:1.5px solid transparent;margin-bottom:-1px}
     .nav-btn.active{color:#e8e8e8;border-bottom-color:#e8e8e8}.nav-btn:hover:not(.active){color:#555}
     #edit-btn,#wr-peek-btn{background:none;border:1px solid #1e1e1e;border-radius:8px;padding:9px 16px;font-family:"Outfit",sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;color:#444;cursor:pointer;transition:all .2s;white-space:nowrap}
-    #edit-btn:hover{border-color:#333;color:#888}
-    #wr-peek-btn{border-color:#1a2a1a;color:#3a5a3a}#wr-peek-btn:hover{border-color:#2a4a2a;color:#4ade80}
+    #edit-btn:hover,#wr-peek-btn:hover{border-color:#333;color:#888}
+    #weather-widget{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:10px;color:#333;letter-spacing:.5px;min-height:16px}
+    #weather-icon{font-size:14px;line-height:1}
+    #weather-temp{font-family:"Cormorant Garamond",serif;font-size:15px;font-weight:300;color:#555}
+    #weather-desc{font-size:9px;color:#2a2a2a;letter-spacing:1px;text-transform:uppercase}
     .view-label{font-size:10px;font-weight:700;letter-spacing:4px;color:#2a2a2a;margin-bottom:16px}
-    #identity-bar{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap}
-    #identity-label{font-size:9px;font-weight:700;letter-spacing:2px;color:#2a2a2a}
-    .identity-btn{background:none;border:1px solid #252525;border-radius:6px;cursor:pointer;font-family:"Outfit",sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;color:#333;padding:7px 14px;transition:all .2s}
-    .identity-btn:hover{border-color:#444;color:#888}.identity-btn.active{border-color:#e8e8e8;color:#e8e8e8}
-    .identity-btn.katelyn.active{border-color:#f4a4b8;color:#f4a4b8}.identity-btn.jackson.active{border-color:#7dd3fc;color:#7dd3fc}
+    .identity-btn{background:none;border:1px solid #1e1e1e;border-radius:6px;cursor:pointer;font-family:"Outfit",sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#2a2a2a;padding:5px 10px;transition:all .2s}
+    .identity-btn:hover{border-color:#333;color:#555}
+    .identity-btn.active{border-color:#e8e8e8;color:#e8e8e8}
+    .identity-btn.katelyn.active{border-color:#f4a4b8;color:#f4a4b8}
+    .identity-btn.jackson.active{border-color:#7dd3fc;color:#7dd3fc}
     .section-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;margin-top:20px}
     .section-pip{width:2.5px;height:14px;border-radius:99px;opacity:.8}
     .section-label{font-size:10px;font-weight:700;color:#666;letter-spacing:3px}
@@ -118,9 +121,11 @@
     .sec-bar-fill{height:100%;border-radius:99px;transition:width .6s ease}
     .sec-bar-counts{font-size:9px;color:#333;margin-top:3px;text-align:right;letter-spacing:1px}
     #footer-note{font-size:9px;color:#1e1e1e;text-align:center;letter-spacing:1px;margin-top:16px;padding-top:16px;border-top:1px solid #111}
-    #left-footer{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:24px;border-top:1px solid #0f0f0f}
+    #left-footer{display:flex;justify-content:space-between;align-items:flex-end;margin-top:auto;padding-top:24px;border-top:1px solid #0f0f0f}
+    #checkin-area{display:flex;flex-direction:column;gap:6px}
     #checkin-indicator{font-size:9px;color:#2a2a2a;letter-spacing:1.5px}
-    #version-tag{font-size:9px;color:#1a1a1a;letter-spacing:2px}
+    #identity-bar{display:flex;gap:6px}
+    #version-tag{font-size:9px;color:#1a1a1a;letter-spacing:2px;padding-bottom:2px}
     #loading-state{font-size:13px;color:#2a2a2a;padding:20px 0;letter-spacing:1px}
     #empty-state{display:none;padding:28px 0 8px;text-align:center}
     .week-strip{display:flex;gap:6px;margin-bottom:24px;border-bottom:1px solid #1a1a1a;padding-bottom:16px}
@@ -221,9 +226,9 @@
       <div id="splash-family">Family</div>
       <div id="splash-copy">&copy;</div>
     </div>
+    <div id="splash-rule"></div>
+    <div id="splash-sub">STEWARD &middot; v1.0</div>
   </div>
-  <div id="splash-rule"></div>
-  <div id="splash-sub">STEWARD &middot; v1.0</div>
 </div>
 
 <div id="weekly-report">
@@ -410,6 +415,11 @@
             <div id="clock-time">12:00<span>am</span></div>
           </div>
         </div>
+        <div id="weather-widget">
+          <span id="weather-icon"></span>
+          <span id="weather-temp"></span>
+          <span id="weather-desc"></span>
+        </div>
         <div id="sync-status">LOADING&hellip;</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:stretch;gap:7px">
@@ -427,11 +437,6 @@
 
     <div id="view-today">
       <div class="view-label">TODAY'S ACTIONS</div>
-      <div id="identity-bar">
-        <span id="identity-label">CHECKING IN AS</span>
-        <button class="identity-btn katelyn" data-identity="Katelyn"  onclick="setIdentity('Katelyn')">KATELYN</button>
-        <button class="identity-btn jackson" data-identity="Jackson"  onclick="setIdentity('Jackson')">JACKSON</button>
-      </div>
       <div id="task-list"><div id="loading-state">Syncing with your task list&hellip;</div></div>
       <div id="empty-state">
         <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:#1e1e1e;margin-bottom:8px">Nothing left today.</div>
@@ -464,7 +469,13 @@
     </div>
 
     <div id="left-footer">
-      <div id="checkin-indicator"></div>
+      <div id="checkin-area">
+        <div id="checkin-indicator"></div>
+        <div id="identity-bar">
+          <button class="identity-btn katelyn" data-identity="Katelyn" onclick="setIdentity('Katelyn')">KATELYN</button>
+          <button class="identity-btn jackson" data-identity="Jackson" onclick="setIdentity('Jackson')">JACKSON</button>
+        </div>
+      </div>
       <div id="version-tag">STEWARD &middot; v1.0</div>
     </div>
   </div>
@@ -1345,6 +1356,33 @@ async function submitTask() {
   finally { btn.textContent = '+ ADD TASK'; btn.disabled = false; }
 }
 
+// ── WEATHER ───────────────────────────────────────────────────────────────────
+// Open-Meteo API — free, no key, Edmonton coords
+const WEATHER_CODES = {
+  0:'Clear',1:'Mostly clear',2:'Partly cloudy',3:'Overcast',
+  45:'Foggy',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',
+  61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',
+  77:'Snow grains',80:'Showers',81:'Rain showers',82:'Heavy showers',
+  85:'Snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Thunderstorm',99:'Thunderstorm',
+};
+const WEATHER_ICONS = {
+  0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',
+  51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',
+  71:'🌨️',73:'❄️',75:'❄️',77:'❄️',80:'🌦️',81:'🌦️',82:'⛈️',
+  85:'🌨️',86:'❄️',95:'⛈️',96:'⛈️',99:'⛈️',
+};
+async function loadWeather() {
+  try {
+    const res  = await fetch('https://api.open-meteo.com/v1/forecast?latitude=53.5461&longitude=-113.4938&current=temperature_2m,weather_code&temperature_unit=celsius&timezone=America%2FEdmonton');
+    const data = await res.json();
+    const temp = Math.round(data.current.temperature_2m);
+    const code = data.current.weather_code;
+    document.getElementById('weather-icon').textContent = WEATHER_ICONS[code] || '🌡️';
+    document.getElementById('weather-temp').textContent = temp + '°C';
+    document.getElementById('weather-desc').textContent = WEATHER_CODES[code] || '';
+  } catch {}
+}
+
 // ── SPLASH ────────────────────────────────────────────────────────────────────
 function hideSplash() {
   const s = document.getElementById('splash');
@@ -1364,6 +1402,7 @@ async function init() {
   await syncFromSheet();
   await hydrateTodayState();
   loadServerHistory(90); // non-blocking background load
+  loadWeather();         // non-blocking
   hideSplash();
 }
 init();
