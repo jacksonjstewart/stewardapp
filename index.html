@@ -62,11 +62,6 @@
     #weather-temp{font-family:"Cormorant Garamond",serif;font-size:19px;font-weight:300;color:#666}
     #weather-desc{font-size:9px;color:#2a2a2a;letter-spacing:1px;text-transform:uppercase;align-self:center}
     .view-label{font-size:10px;font-weight:700;letter-spacing:4px;color:#2a2a2a;margin-bottom:16px}
-    .identity-btn{background:none;border:1px solid #1e1e1e;border-radius:6px;cursor:pointer;font-family:"Outfit",sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#2a2a2a;padding:5px 10px;transition:all .2s}
-    .identity-btn:hover{border-color:#333;color:#555}
-    .identity-btn.active{border-color:#e8e8e8;color:#e8e8e8}
-    .identity-btn.katelyn.active{border-color:#c084fc;color:#c084fc}
-    .identity-btn.jackson.active{border-color:#4ade80;color:#4ade80}
     .section-header{display:flex;align-items:center;gap:8px;margin-bottom:10px;margin-top:20px}
     .section-pip{width:2.5px;height:14px;border-radius:99px;opacity:.8}
     .section-label{font-size:10px;font-weight:700;color:#666;letter-spacing:3px}
@@ -1038,7 +1033,7 @@ function renderHistoryWeeks() {
           const t = wt[i], p = t ? done/t : 0;
           const c = t===0?'#1a1a1a':p===1?'#4ade80':p>=.5?'#facc15':'#f87171';
           return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px">'
-            + '<div style="width:100%;height:' + (t ? Math.max(8, Math.round(p*52)) : 4) + 'px;background:' + c + ';border-radius:3px;opacity:' + (t?.6:.15) + '"></div>'
+            + '<div style="width:100%;height:' + (t ? Math.max(8, Math.round(p*52)) : 4) + 'px;background:' + c + ';border-radius:3px;opacity:' + (t ? .6 : .15) + '"></div>'
             + '<div style="font-size:7px;color:#333;letter-spacing:1px">' + done + '/' + t + '</div>'
             + '</div>';
         }).join('')
@@ -1151,9 +1146,6 @@ function setIdentity(name, fromModal = false) {
   identity = name;
   try { localStorage.setItem('st_identity', name); } catch {}
   if (fromModal) document.getElementById('identity-modal-overlay').style.display = 'none';
-  document.querySelectorAll('.identity-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.identity === name);
-  });
   updateCheckinIndicator();
 }
 function updateCheckinIndicator() {
@@ -1306,6 +1298,7 @@ function openTaskModal() {
 }
 function closeTaskModal() {
   document.getElementById('task-modal-overlay').style.display = 'none';
+  document.getElementById('m-emoji').value      = '✅';
   document.getElementById('m-name').value       = '';
   document.getElementById('m-notes').value      = '';
   document.getElementById('m-targetdate').value = '';

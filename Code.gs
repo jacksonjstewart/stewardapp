@@ -106,9 +106,13 @@ function getTodayState(dateKey) {
 // Returns log entries from the past N days for the History view.
 
 function getHistory(days) {
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - days);
-  const cutoffStr = fmtDate(cutoff); // YYYY-MM-DD
+  // Compute cutoff in Edmonton time (UTC-7 standard / UTC-6 daylight).
+  // Apps Script runs in UTC; subtract the offset before formatting so the
+  // boundary is correct for Edmonton users rather than being off by up to a day.
+  const nowUtc    = new Date();
+  const msMtn     = nowUtc.getTime() - (7 * 3600000); // conservative UTC-7
+  const cutoffUtc = new Date(msMtn - (days * 86400000));
+  const cutoffStr = fmtDate(cutoffUtc); // YYYY-MM-DD
 
   const ss       = SpreadsheetApp.openById(SHEET_ID);
   const logSheet = getOrCreateLog(ss);
