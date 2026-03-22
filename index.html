@@ -132,19 +132,34 @@
     .week-day-pip{width:4px;height:4px;border-radius:99px;background:transparent}
     .week-day-pip.pending{background:#facc15}.week-day-pip.complete{background:#4ade80}
     .week-detail-header{font-size:11px;font-weight:600;letter-spacing:2px;color:#444;margin-bottom:16px}
-    .domain-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.055);border-radius:12px;padding:16px;margin-bottom:12px;cursor:pointer;transition:background .15s,border-color .15s}
+    .domain-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.055);border-radius:12px;padding:16px;margin-bottom:12px;cursor:pointer;transition:background .15s,border-color .15s;user-select:none}
     .domain-card:hover{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.09)}
-    .domain-card-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .domain-card.open{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.03)}
+    .domain-card-header{display:flex;align-items:center;gap:10px}
     .domain-card-icon{font-size:18px}.domain-card-title{font-size:10px;font-weight:700;letter-spacing:3px;flex:1}
-    .domain-health-dot{width:8px;height:8px;border-radius:50%}
-    .domain-card-stats{font-size:10px;color:#444;letter-spacing:1px;margin-bottom:10px;display:flex;justify-content:space-between}
+    .domain-dots{display:flex;gap:5px;align-items:center;margin:0 6px}
+    .domain-dot{width:7px;height:7px;border-radius:50%;transition:box-shadow .3s}
+    .domain-dot.green{background:#4ade80;box-shadow:0 0 6px #4ade8077}
+    .domain-dot.amber{background:#facc15;box-shadow:0 0 6px #facc1566}
+    .domain-dot.red{background:#f87171;box-shadow:0 0 6px #f8717166}
+    .domain-dot.gray{background:#222}
+    .domain-health-pct{font-size:10px;letter-spacing:1px;font-weight:600}
+    .domain-card-detail{display:none;margin-top:14px;padding-top:14px;border-top:1px solid #111}
+    .domain-card.open .domain-card-detail{display:block}
     .domains-empty{font-family:"Cormorant Garamond",serif;font-size:15px;font-style:italic;color:#2a2a2a;text-align:center;padding:16px 0}
-    .criterion-linked-task{display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:8px;background:#0a0a0a;border:1px solid #141414;border-radius:8px}
-    .criterion-linked-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-    .criterion-linked-dot.green{background:#4ade80}.criterion-linked-dot.amber{background:#facc15}.criterion-linked-dot.red{background:#f87171}
-    .criterion-linked-name{font-size:10px;font-weight:500;color:#666;flex:1;letter-spacing:.2px}
-    .criterion-linked-freq{font-size:8.5px;color:#333;letter-spacing:.5px;margin-top:2px}
-    .criterion-linked-status{font-size:8px;font-weight:700;letter-spacing:1.5px;flex-shrink:0;text-align:right}
+    .ind-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #0f0f0f}
+    .ind-row:last-child{border-bottom:none}
+    .ind-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:3px}
+    .ind-dot.green{background:#4ade80;box-shadow:0 0 8px #4ade8055}
+    .ind-dot.amber{background:#facc15;box-shadow:0 0 8px #facc1555}
+    .ind-dot.red{background:#f87171;box-shadow:0 0 8px #f8717155}
+    .ind-dot.gray{background:#222}
+    .ind-name{font-size:9px;font-weight:700;letter-spacing:2px;color:#555;margin-bottom:6px;text-transform:uppercase}
+    .ind-status{font-size:8px;font-weight:700;letter-spacing:1.5px;flex-shrink:0;margin-top:2px;min-width:72px;text-align:right}
+    .ind-task-item{display:flex;align-items:center;gap:7px;padding:3px 0}
+    .ind-task-dot{width:4px;height:4px;border-radius:50%;flex-shrink:0}
+    .ind-task-name{font-size:11px;color:#3a3a3a}
+    .ind-task-meta{font-size:9px;color:#2a2a2a;margin-left:auto;letter-spacing:.3px;white-space:nowrap;padding-left:8px}
     #history-subnav{display:flex;border-bottom:1px solid #181818;margin-bottom:20px}
     .hist-tab{background:none;border:none;cursor:pointer;font-family:"Outfit",sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;color:#2a2a2a;padding:0 0 10px;margin-right:20px;border-bottom:1.5px solid transparent;margin-bottom:-1px;transition:color .2s}
     .hist-tab.active{color:#e8e8e8;border-bottom-color:#e8e8e8}
@@ -178,15 +193,6 @@
     .identity-modal-btn:hover{border-color:#555;color:#888}.identity-modal-btn:last-child{margin-bottom:0}
     .identity-modal-btn.katelyn{border-color:#5a2a7a;color:#c084fc}
     .identity-modal-btn.jackson{border-color:#1a4a1a;color:#4ade80}
-    #domain-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:50;align-items:center;justify-content:center}
-    #domain-modal{background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:28px;width:100%;max-width:440px;max-height:80vh;overflow-y:auto;margin:0 20px}
-    #dm-header{margin-bottom:20px}
-    #dm-title{font-size:13px;font-weight:700;letter-spacing:3px;color:#e8e8e8;margin-bottom:4px}
-    #dm-subtitle{font-size:10px;color:#444;letter-spacing:1px}
-    #dm-body{margin-bottom:20px}
-    #dm-footer{display:flex;justify-content:flex-end;border-top:1px solid #1a1a1a;padding-top:16px}
-    #dm-cancel{background:none;border:none;cursor:pointer;font-family:"Outfit",sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;color:#333;padding:10px 0;transition:color .2s}
-    #dm-cancel:hover{color:#666}
     #task-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:50;align-items:center;justify-content:center}
     #task-modal{background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:28px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;margin:0 20px}
     .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
@@ -246,18 +252,6 @@
   </div>
 </div>
 
-<div id="domain-modal-overlay" onclick="closeDomainModal()">
-  <div id="domain-modal" onclick="event.stopPropagation()">
-    <div id="dm-header">
-      <div id="dm-title"></div>
-      <div id="dm-subtitle"></div>
-    </div>
-    <div id="dm-body"></div>
-    <div id="dm-footer">
-      <button id="dm-cancel" onclick="closeDomainModal()">CLOSE</button>
-    </div>
-  </div>
-</div>
 
 <div id="identity-modal-overlay">
   <div id="identity-modal">
@@ -285,7 +279,7 @@
     <div class="modal-row">
       <div class="modal-field" style="flex:1">
         <div class="modal-label">SECTION</div>
-        <select id="m-section" class="modal-select">
+        <select id="m-section" class="modal-select" onchange="updateIndicatorSuggestions()">
           <option value="vehicle">Vehicle</option>
           <option value="digital">Digital</option>
           <option value="home">Household</option>
@@ -386,6 +380,11 @@
           </div>
         </div>
       </div>
+    </div>
+    <div class="modal-field">
+      <div class="modal-label">HEALTH INDICATOR <span style="color:#333;font-weight:400;letter-spacing:0">&mdash; which indicator does this task inform?</span></div>
+      <input id="m-indicator" class="modal-input" placeholder="e.g. Insurance, Oil Changes&hellip;" list="indicator-suggestions" autocomplete="off"/>
+      <datalist id="indicator-suggestions"></datalist>
     </div>
     <div class="modal-field">
       <div class="modal-label">NOTES <span style="color:#333;font-weight:400;letter-spacing:0">&mdash; separate lines with |</span></div>
@@ -599,6 +598,7 @@ function normalizeTask(raw) {
     targetDate: raw.targetdate  || '',
     dueDate:    raw.duedate     || '',
     notes:      raw.notes       || '',
+    indicator:  (raw.indicator  || '').trim(),
   };
 }
 
@@ -912,43 +912,110 @@ function renderWeekDetail(idx) {
   document.getElementById('week-detail').innerHTML = html;
 }
 
+// ── HEALTH INDICATOR LOGIC ────────────────────────────────────────────────────
+// Rolling status: find the last time each task was due and check if it was done.
+// 'done'    — completed on last due date (local or server log)
+// 'pending' — due today, not yet checked
+// 'missed'  — last due date passed without completion
+// 'gray'    — not due within the lookback window (new/future task)
+
+function getTaskRollingStatus(task) {
+  if (task.type === 'once') {
+    return otoDone[task.id] ? 'done' : 'pending';
+  }
+  const today   = edmontonNow();
+  const todayDk = getDateKey(today);
+  const maxDays = { daily: 2, weekly: 14, biweekly: 28, monthly: 62, yearly: 400 };
+  const lookback = maxDays[task.freq] || 30;
+  // Walk backwards to find the most recent due date
+  let lastDk = null;
+  for (let i = 0; i <= lookback; i++) {
+    const d = new Date(today); d.setDate(today.getDate() - i);
+    const dk = getDateKey(d);
+    if (isDueOn(task, dk)) { lastDk = dk; break; }
+  }
+  if (!lastDk) return 'gray';
+  if (doneLog[doneKey(task.id, lastDk)]) return 'done';
+  if (serverLogEntries.some(e => e.taskId === task.id && e.dateKey === lastDk)) return 'done';
+  if (lastDk === todayDk) return 'pending';
+  return 'missed';
+}
+
+function getIndicatorStatus(indicatorTasks) {
+  if (!indicatorTasks.length) return 'gray';
+  const ss = indicatorTasks.map(t => getTaskRollingStatus(t));
+  if (ss.every(s => s === 'done'))   return 'green';
+  if (ss.some(s  => s === 'missed')) return 'red';
+  return 'amber'; // mix of done+pending, or all pending
+}
+
 // ── RENDER: DOMAINS ───────────────────────────────────────────────────────────
 function renderDomains() {
-  const dk = todayKey();
   let html = '';
   SECTIONS.forEach(sec => {
-    const all = tasks.filter(t => t.section === sec.key && !(t.type === 'once' && otoDone[t.id]));
-    const td  = all.filter(t => isDueOn(t, dk));
-    const dc  = td.filter(t => isDone(t.id, dk)).length;
-    const pct = td.length ? Math.round(dc / td.length * 100) : null;
-    const dot = pct === null ? '#333' : pct === 100 ? '#4ade80' : pct >= 50 ? '#facc15' : '#f87171';
-    const mini = td.slice(0,4).map(t => {
-      const done = isDone(t.id, dk);
-      return '<div class="criterion-linked-task">'
-        + '<div class="criterion-linked-dot ' + (done ? 'green' : 'amber') + '"></div>'
-        + '<div style="flex:1">'
-        +   '<div class="criterion-linked-name">' + esc(t.emoji) + ' ' + esc(t.name) + '</div>'
-        +   '<div class="criterion-linked-freq">' + getFreqLabel(t) + '</div>'
-        + '</div>'
-        + (done ? '<div class="criterion-linked-status" style="color:#4ade80">DONE</div>' : '')
-        + '</div>';
+    const secTasks = tasks.filter(t => t.section === sec.key && !(t.type === 'once' && otoDone[t.id]));
+    // Group by health indicator name; ungrouped tasks go under '—'
+    const indMap = {};
+    secTasks.forEach(t => {
+      const key = t.indicator || '\u2014';
+      if (!indMap[key]) indMap[key] = [];
+      indMap[key].push(t);
+    });
+    const indicators  = Object.entries(indMap);
+    const total       = indicators.length;
+    const satisfied   = indicators.filter(([, tt]) => getIndicatorStatus(tt) === 'green').length;
+    const pct         = total ? Math.round(satisfied / total * 100) : null;
+    const domainCol   = pct === 100 ? '#4ade80' : pct !== null ? '#facc15' : '#444';
+
+    // Header dots — one per indicator
+    const dots = indicators.map(([, tt]) => {
+      const s = getIndicatorStatus(tt);
+      return '<div class="domain-dot ' + s + '"></div>';
     }).join('');
-    const extra = td.length > 4 ? '<div style="font-size:10px;color:#333;padding:2px 12px">+' + (td.length-4) + ' more</div>' : '';
-    html += '<div class="domain-card" onclick="openDomainModal(\'' + sec.key + '\')">'
+
+    // Accordion detail rows
+    let detail = '';
+    if (!indicators.length) {
+      detail = '<div class="domains-empty">No tasks in this domain yet.</div>';
+    } else {
+      const statusLabel = { green:'SATISFIED', amber:'IN PROGRESS', red:'OVERDUE', gray:'NO DATA' };
+      const statusCol   = { green:'#4ade80',   amber:'#facc15',     red:'#f87171', gray:'#444' };
+      const taskCol     = { done:'#4ade80',    pending:'#facc15',   missed:'#f87171', gray:'#333' };
+      const taskLabel   = { done:'done',       pending:'pending',   missed:'missed',  gray:'\u2014' };
+      indicators.forEach(([indName, indTasks]) => {
+        const status = getIndicatorStatus(indTasks);
+        let taskRows = indTasks.map(t => {
+          const ts = getTaskRollingStatus(t);
+          return '<div class="ind-task-item">'
+            + '<div class="ind-task-dot" style="background:' + taskCol[ts] + '"></div>'
+            + '<div class="ind-task-name">' + esc(t.emoji) + ' ' + esc(t.name) + '</div>'
+            + '<div class="ind-task-meta">' + getFreqLabel(t) + ' &middot; ' + taskLabel[ts] + '</div>'
+            + '</div>';
+        }).join('');
+        detail += '<div class="ind-row">'
+          + '<div class="ind-dot ' + status + '"></div>'
+          + '<div style="flex:1">'
+          +   '<div class="ind-name">' + esc(indName) + '</div>'
+          +   taskRows
+          + '</div>'
+          + '<div class="ind-status" style="color:' + statusCol[status] + '">' + statusLabel[status] + '</div>'
+          + '</div>';
+      });
+    }
+
+    html += '<div class="domain-card" onclick="toggleDomainCard(this)">'
       + '<div class="domain-card-header">'
       +   '<div class="domain-card-icon">' + sec.emoji + '</div>'
       +   '<div class="domain-card-title" style="color:' + sec.color + '">' + sec.label.toUpperCase() + '</div>'
-      +   '<div class="domain-health-dot" style="background:' + dot + '"></div>'
+      +   '<div class="domain-dots">' + dots + '</div>'
+      +   (pct !== null ? '<div class="domain-health-pct" style="color:' + domainCol + '">' + satisfied + '/' + total + '</div>' : '')
       + '</div>'
-      + '<div class="domain-card-stats">'
-      +   '<span>' + dc + '/' + td.length + ' today &middot; ' + all.length + ' total</span>'
-      +   (pct !== null ? '<span>' + pct + '%</span>' : '')
-      + '</div>'
-      + (td.length ? mini + extra : '<div class="domains-empty">No tasks today</div>')
+      + '<div class="domain-card-detail">' + detail + '</div>'
       + '</div>';
   });
   document.getElementById('domains-content').innerHTML = html || '<div class="domains-empty">No tasks loaded yet.</div>';
 }
+function toggleDomainCard(el) { el.classList.toggle('open'); }
 
 // ── RENDER: HISTORY ───────────────────────────────────────────────────────────
 function renderHistory() {
@@ -1176,7 +1243,10 @@ function switchView(view) {
   document.querySelectorAll('.nav-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.view === view);
   });
-  if (view === 'history') {
+  if (view === 'domains') {
+    // Yearly tasks need up to 400 days of history to determine rolling status
+    loadServerHistory(400).then(renderDomains);
+  } else if (view === 'history') {
     loadServerHistory(histDays).then(renderHistory);
   } else {
     renderCurrentView();
@@ -1252,60 +1322,26 @@ function showWeekReview() {
 document.getElementById('wr-backdrop').addEventListener('click', () => { document.getElementById('weekly-report').style.display = 'none'; });
 document.getElementById('wr-noted').addEventListener('click',   () => { document.getElementById('weekly-report').style.display = 'none'; });
 
-// ── DOMAIN MODAL ──────────────────────────────────────────────────────────────
-function openDomainModal(sectionKey) {
-  const sec = SECTIONS.find(s => s.key === sectionKey);
-  if (!sec) return;
-  const dk    = todayKey();
-  const all   = tasks.filter(t => t.section === sectionKey && !(t.type === 'once' && otoDone[t.id]));
-  const today = all.filter(t => isDueOn(t, dk));
-  document.getElementById('dm-title').textContent    = sec.emoji + ' ' + sec.label.toUpperCase();
-  document.getElementById('dm-subtitle').textContent = today.length + ' tasks today \u00b7 ' + all.length + ' total';
-  let html = '';
-  if (!all.length) {
-    html = '<div class="domains-empty">No tasks in this domain yet.</div>';
-  } else {
-    if (today.length) {
-      html += '<div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#444;margin-bottom:10px">TODAY</div>';
-      today.forEach(t => {
-        const done = isDone(t.id, dk);
-        html += '<div class="criterion-linked-task">'
-          + '<div class="criterion-linked-dot ' + (done ? 'green' : 'amber') + '"></div>'
-          + '<div style="flex:1"><div class="criterion-linked-name">' + esc(t.emoji) + ' ' + esc(t.name) + '</div>'
-          + '<div class="criterion-linked-freq">' + getFreqLabel(t) + '</div></div>'
-          + '<div class="criterion-linked-status" style="color:' + (done ? '#4ade80' : '#facc15') + '">' + (done ? 'DONE' : 'DUE') + '</div>'
-          + '</div>';
-      });
-    }
-    const other = all.filter(t => !isDueOn(t, dk));
-    if (other.length) {
-      html += '<div style="font-size:9px;font-weight:700;letter-spacing:2px;color:#333;margin:14px 0 10px">ALL TASKS</div>';
-      other.forEach(t => {
-        html += '<div class="criterion-linked-task">'
-          + '<div class="criterion-linked-dot red"></div>'
-          + '<div style="flex:1"><div class="criterion-linked-name">' + esc(t.emoji) + ' ' + esc(t.name) + '</div>'
-          + '<div class="criterion-linked-freq">' + getFreqLabel(t) + '</div></div>'
-          + '</div>';
-      });
-    }
-  }
-  document.getElementById('dm-body').innerHTML = html;
-  document.getElementById('domain-modal-overlay').style.display = 'flex';
-}
-function closeDomainModal() { document.getElementById('domain-modal-overlay').style.display = 'none'; }
 
 // ── TASK MODAL ────────────────────────────────────────────────────────────────
 function openTaskModal() {
   document.getElementById('task-modal-overlay').style.display = 'flex';
-  onModalTypeChange(); onModalFreqChange();
+  onModalTypeChange(); onModalFreqChange(); updateIndicatorSuggestions();
 }
 function closeTaskModal() {
   document.getElementById('task-modal-overlay').style.display = 'none';
   document.getElementById('m-emoji').value      = '✅';
   document.getElementById('m-name').value       = '';
+  document.getElementById('m-indicator').value  = '';
   document.getElementById('m-notes').value      = '';
   document.getElementById('m-targetdate').value = '';
   document.querySelectorAll('.day-pill').forEach(p => p.classList.remove('active'));
+}
+function updateIndicatorSuggestions() {
+  const sec  = document.getElementById('m-section').value;
+  const inds = [...new Set(tasks.filter(t => t.section === sec && t.indicator).map(t => t.indicator))];
+  const dl   = document.getElementById('indicator-suggestions');
+  if (dl) dl.innerHTML = inds.map(i => '<option value="' + esc(i) + '">').join('');
 }
 function handleOverlayClick(e) { if (e.target === document.getElementById('task-modal-overlay')) closeTaskModal(); }
 function onModalTypeChange() {
@@ -1341,6 +1377,7 @@ async function submitTask() {
   const type       = document.getElementById('m-type').value;
   const section    = document.getElementById('m-section').value;
   const emoji      = document.getElementById('m-emoji').value.trim() || '\u2705';
+  const indicator  = document.getElementById('m-indicator').value.trim();
   const notes      = document.getElementById('m-notes').value.trim();
   const freq       = type === 'recurring' ? document.getElementById('m-freq').value : 'once';
   const targetdate = type === 'once'      ? document.getElementById('m-targetdate').value : '';
@@ -1361,7 +1398,7 @@ async function submitTask() {
   const btn = document.getElementById('modal-submit');
   btn.textContent = 'SAVING\u2026'; btn.disabled = true;
   try {
-    const res  = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'addTask', task: { name, emoji, section, frequency: freq, type, dow, dotm, dotw_ord, yearMonth, targetdate, notes } }) });
+    const res  = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'addTask', task: { name, emoji, section, indicator, frequency: freq, type, dow, dotm, dotw_ord, yearMonth, targetdate, notes } }) });
     const data = await res.json();
     if (data.ok) { closeTaskModal(); await syncFromSheet(); }
     else          alert('Error: ' + (data.error || 'Unknown'));

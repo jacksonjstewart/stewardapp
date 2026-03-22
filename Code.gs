@@ -155,6 +155,7 @@ function addTask(task) {
     name:        task.name        || '',
     emoji:       task.emoji       || '✅',
     section:     task.section     || 'home',
+    indicator:   task.indicator   || '',
     frequency:   task.frequency   || 'once',
     dow:         task.dow         || '',
     dotm:        task.dotm        || '',
