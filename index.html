@@ -541,6 +541,7 @@ let histTab          = 'log';
 let histDays         = 30;
 let lastDateKey      = '';
 let softTimer        = null;
+let dailyCommitDone  = false; // true once 23:58 commit has fired for today
 
 // ── DATE HELPERS ──────────────────────────────────────────────────────────────
 function edmontonNow() {
@@ -696,26 +697,29 @@ function toggleDone(taskId) {
 }
 
 // ── SOFT COMMIT ───────────────────────────────────────────────────────────────
+// Debounced 5 s after last toggle. Sends the COMPLETE current state for the day
+// (full REPLACE on the server — no stale rows, no bloat).
 function scheduleSoftCommit() {
   if (!API_URL) return;
   if (softTimer) clearTimeout(softTimer);
-  softTimer = setTimeout(pushToServer, 15000);
+  softTimer = setTimeout(pushToServer, 5000);
 }
 async function pushToServer(dko) {
   if (!API_URL) return;
-  const dk = dko || todayKey();
+  const dk  = dko || todayKey();
   const sep = '__' + dk;
+  // Build the complete set of completed tasks for this day
   const entries = Object.entries(doneLog)
     .filter(([k]) => k.endsWith(sep))
     .map(([k, v]) => {
-      const tid = k.slice(0, k.length - sep.length); // safe even if taskId contains __
+      const tid = k.slice(0, k.length - sep.length);
       const t   = tasks.find(x => x.id === tid);
       return { taskId: tid, name: t?.name || '', section: t?.section || '',
                emoji: t?.emoji || '', completedAt: v.ts, dateKey: dk, who: v.who };
     });
-  if (!entries.length) return;
+  // Always push — even if empty — so unchecking everything clears the server row
   try {
-    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'commit', entries }) });
+    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'commit', entries, dateKey: dk }) });
   } catch (e) { console.warn('Soft commit failed:', e); }
 }
 
@@ -1118,11 +1122,26 @@ function updateClock() {
 }
 
 // ── MIDNIGHT CHECK ────────────────────────────────────────────────────────────
+// Fires every 60 s. At 23:58 PM we push the final state for today so the server
+// has committed data before the new day begins. At 00:00 we re-render the new day.
 function checkMidnight() {
-  const dk = todayKey();
+  const now = edmontonNow();
+  const dk  = getDateKey(now);
+  const h   = now.getHours();
+  const m   = now.getMinutes();
+
+  // 23:58 PM commit — push final state for today before midnight
+  if (h === 23 && m >= 58 && !dailyCommitDone) {
+    dailyCommitDone = true;
+    pushToServer(dk).catch(() => {});
+  }
+
+  // Date rollover — render new day
   if (lastDateKey && dk !== lastDateKey) {
-    pushToServer(lastDateKey).catch(() => {});
+    dailyCommitDone = false;
     renderCurrentView();
+    updateRing();
+    updateTopBar();
   }
   lastDateKey = dk;
 }
@@ -1394,9 +1413,10 @@ function hideSplash() {
 async function init() {
   lastDateKey = todayKey();
   loadDoneLog(); loadOtoDone(); loadIdentity(); updateClock();
-  setInterval(updateClock,    10000);
-  setInterval(checkMidnight,  60000);
-  setInterval(syncFromSheet,  SYNC_MS);
+  setInterval(updateClock,       10000);
+  setInterval(checkMidnight,     60000);
+  setInterval(syncFromSheet,     SYNC_MS);
+  setInterval(hydrateTodayState, 2 * 60 * 1000); // multi-device sync every 2 min
   await syncFromSheet();
   await hydrateTodayState();
   loadServerHistory(90); // non-blocking background load

@@ -15,7 +15,7 @@ function doPost(e) {
     const data   = JSON.parse(e.postData.contents);
     const action = data.action;
 
-    if (action === 'commit')        return jsonOk(commitEntries(data.entries));
+    if (action === 'commit')        return jsonOk(commitEntries(data.entries, data.dateKey));
     if (action === 'addTask')       return jsonOk(addTask(data.task));
     if (action === 'deleteTask')    return jsonOk(deleteTask(data.taskId));
 
@@ -39,31 +39,30 @@ function doGet(e) {
 }
 
 // ─── COMMIT ──────────────────────────────────────────────────────────────────
-// Write an array of completion entries to the Log sheet.
-// Called at midnight (auto) or on demand (soft-sync).
-// Entries already committed for that dateKey are replaced (upsert by taskId+dateKey).
+// Full REPLACE for a given dateKey: delete every existing row for that date,
+// then append the new set. Sending an empty entries array clears the day.
+// This guarantees no stale rows — unchecking a task and re-committing removes it.
 
-function commitEntries(entries) {
-  if (!entries || !entries.length) return { committed: 0 };
+function commitEntries(entries, dateKey) {
+  const dk = dateKey || (entries && entries.length ? entries[0].dateKey : null);
+  if (!dk) return { committed: 0 };
 
   const ss       = SpreadsheetApp.openById(SHEET_ID);
   const logSheet = getOrCreateLog(ss);
   const data     = logSheet.getDataRange().getValues();
-  const headers  = data[0]; // taskId, name, section, emoji, completedAt, dateKey, who
+  const headers  = data[0];
+  const dateIdx  = headers.indexOf('dateKey');
 
-  const idIdx   = headers.indexOf('taskId');
-  const dateIdx = headers.indexOf('dateKey');
-
-  // Build a map of existing rows: key = taskId + '|' + dateKey → row index (1-based)
-  const existingMap = {};
-  for (let r = 1; r < data.length; r++) {
-    const key = data[r][idIdx] + '|' + data[r][dateIdx];
-    existingMap[key] = r + 1; // sheet rows are 1-based
+  // Delete all existing rows for this dateKey (iterate backwards to keep indices stable)
+  for (let r = data.length - 1; r >= 1; r--) {
+    if (String(data[r][dateIdx]) === String(dk)) {
+      logSheet.deleteRow(r + 1);
+    }
   }
 
-  let written = 0;
-  entries.forEach(entry => {
-    const row = [
+  // Append fresh set
+  (entries || []).forEach(entry => {
+    logSheet.appendRow([
       entry.taskId      || '',
       entry.name        || '',
       entry.section     || '',
@@ -71,20 +70,10 @@ function commitEntries(entries) {
       entry.completedAt || '',
       entry.dateKey     || '',
       entry.who         || '',
-    ];
-    const key = (entry.taskId || '') + '|' + (entry.dateKey || '');
-
-    if (existingMap[key]) {
-      // Update existing row
-      logSheet.getRange(existingMap[key], 1, 1, row.length).setValues([row]);
-    } else {
-      // Append new row
-      logSheet.appendRow(row);
-    }
-    written++;
+    ]);
   });
 
-  return { committed: written };
+  return { committed: (entries || []).length };
 }
 
 // ─── GET TODAY STATE ──────────────────────────────────────────────────────────
