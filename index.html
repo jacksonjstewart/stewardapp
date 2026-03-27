@@ -225,6 +225,39 @@
     .mode-pill{background:none;border:1px solid #1e1e1e;border-radius:6px;padding:6px 12px;font-family:"Outfit",sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;color:#333;cursor:pointer;transition:all .2s}
     .mode-pill.active{border-color:#e8e8e8;color:#e8e8e8}
     .ordinal-row{display:flex;gap:8px}.num-input{width:80px}
+    /* ── Checklist & Data modals ─────────────────────────────────────────── */
+    #checklist-modal-overlay,#data-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:70;align-items:center;justify-content:center}
+    #checklist-modal,#data-modal{background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:28px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto;margin:0 20px}
+    .checklist-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #111;cursor:pointer;font-size:13px;color:#666;transition:color .15s;user-select:none}
+    .checklist-item:last-child{border-bottom:none}
+    .checklist-item input[type=checkbox]{width:16px;height:16px;accent-color:#4ade80;cursor:pointer;flex-shrink:0}
+    .checklist-item.checked{color:#4ade80}
+    /* ── Task preview tiles (domain indicator expand) ────────────────────── */
+    .ind-row.ind-expandable{cursor:pointer;border-radius:6px;transition:background .15s}
+    .ind-row.ind-expandable:hover{background:rgba(255,255,255,.02)}
+    .ind-chevron{width:14px;height:14px;display:flex;align-items:center;justify-content:center;color:#2a2a2a;transition:transform .25s;flex-shrink:0;margin-top:1px}
+    .ind-row.open .ind-chevron{transform:rotate(90deg);color:#555}
+    .ind-tasks-expand{display:none;margin-top:10px;padding-top:6px}
+    .ind-row.open .ind-tasks-expand{display:block}
+    .tpt{background:rgba(255,255,255,.015);border:1px solid rgba(255,255,255,.045);border-radius:8px;padding:10px 12px;margin-bottom:6px}
+    .tpt:last-child{margin-bottom:0}
+    .tpt-top{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+    .tpt-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+    .tpt-name{font-size:12px;color:#777;flex:1;line-height:1.3}
+    .tpt-pill{font-size:7px;font-weight:700;letter-spacing:1.5px;padding:2px 7px;border-radius:99px;flex-shrink:0;white-space:nowrap}
+    .tpt-pill.today{background:rgba(250,204,21,.1);border:1px solid rgba(250,204,21,.28);color:#facc15}
+    .tpt-pill.done{background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.22);color:#4ade80}
+    .tpt-pill.overdue{background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.25);color:#f87171}
+    .tpt-pill.ahead{background:rgba(125,211,252,.08);border:1px solid rgba(125,211,252,.22);color:#7dd3fc}
+    .tpt-meta{font-size:10px;color:#2a2a2a;letter-spacing:.3px;margin-bottom:6px;line-height:1.4}
+    .tpt-actions{display:flex;gap:6px}
+    .tpt-btn{background:none;border:1px solid #1e1e1e;border-radius:6px;padding:5px 12px;font-family:"Outfit",sans-serif;font-size:8px;font-weight:700;letter-spacing:1.5px;cursor:pointer;transition:all .2s}
+    .tpt-btn.proactive{border-color:#1a3a1a;color:#4ade80}.tpt-btn.proactive:hover{border-color:#4ade80;background:rgba(74,222,128,.07)}
+    .tpt-btn.proactive:disabled{border-color:#111;color:#222;cursor:default}
+    .tpt-btn.clear-pro{border-color:#3a1a1a;color:#f87171}.tpt-btn.clear-pro:hover{border-color:#f87171;background:rgba(248,113,113,.06)}
+    /* ── Domain tile next-action label ───────────────────────────────────── */
+    .domain-next-action{font-size:9px;color:#2a2a2a;letter-spacing:.3px;flex:1;text-align:right;padding-right:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+    .ind-next-action{font-size:9px;color:#2a2a2a;letter-spacing:.3px;white-space:nowrap;flex-shrink:0;padding-left:6px}
   </style>
 </head>
 <body>
@@ -265,7 +298,7 @@
 </div>
 
 
-<div id="identity-modal-overlay">
+<div id="identity-modal-overlay" style="display:none">
   <div id="identity-modal">
     <div id="identity-modal-label">THE STEWART FAMILY</div>
     <div id="identity-modal-title">Checking in as&hellip;</div>
@@ -429,6 +462,33 @@
   </div>
 </div>
 
+<div id="checklist-modal-overlay" onclick="if(event.target===this)closeChecklistModal()">
+  <div id="checklist-modal">
+    <div class="modal-header">
+      <span class="modal-title" id="checklist-modal-title"></span>
+      <button class="modal-close" onclick="closeChecklistModal()">&times;</button>
+    </div>
+    <div style="font-size:10px;color:#444;letter-spacing:1px;margin-bottom:16px">Check all items to confirm completion</div>
+    <div id="checklist-items"></div>
+    <button id="checklist-confirm" class="modal-submit" style="margin-top:16px" onclick="confirmChecklist()" disabled>CONFIRM COMPLETE</button>
+  </div>
+</div>
+
+<div id="data-modal-overlay" onclick="if(event.target===this)closeDataModal()">
+  <div id="data-modal">
+    <div class="modal-header">
+      <span class="modal-title" id="data-modal-title"></span>
+      <button class="modal-close" onclick="closeDataModal()">&times;</button>
+    </div>
+    <div style="font-size:11px;font-style:italic;font-family:'Cormorant Garamond',serif;color:#555;margin-bottom:16px" id="data-modal-sub"></div>
+    <div class="modal-field">
+      <div class="modal-label" id="data-modal-label">ENTER VALUE</div>
+      <input id="data-modal-input" class="modal-input" style="color-scheme:dark"/>
+    </div>
+    <button class="modal-submit" style="margin-top:8px" onclick="confirmData()">CONFIRM COMPLETE</button>
+  </div>
+</div>
+
 <div id="offline-banner">NO CONNECTION &mdash; changes saved locally</div>
 <div id="top-bar"><div id="top-bar-fill"></div></div>
 
@@ -562,22 +622,22 @@ const CHEV_SVG  = '<svg width="7" height="12" viewBox="0 0 7 12" fill="none"><pa
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let tasks            = [];
 let doneLog          = {};   // { taskId__dateKey: { ts, who, dataValue } }
-// otoDone stores the targetDate of the cycle that was completed,
-// or 'permanent' for pure OTO tasks (no targetDate / not recyclable).
-// On CSV re-sync, if task.targetDate changes (new cycle), the marker no longer
-// matches and the task becomes eligible again — no manual clearing needed.
+// otoDone: stores targetDate of the completed cycle ('permanent' for pure OTO).
+// If task.targetDate changes (OTO reschedule), marker no longer matches → reappears.
 let otoDone          = {};   // { taskId: 'YYYY-MM-DD' | 'permanent' }
-// proactiveDone tracks get-ahead / proactive completions with a suppressUntil date.
-// Cleared automatically once suppressUntil passes.
-let proactiveDone    = {};   // { taskId: { doneOn, suppressUntil, originalTargetDate? } }
-let serverLogEntries = [];   // entries fetched from Log sheet for history view
+// proactiveDone: get-ahead / domain PROACTIVE completions before due date.
+// suppressUntil = the due date being covered; cleared automatically once passed.
+let proactiveDone    = {};   // { taskId: { doneOn, suppressUntil } }
+let serverLogEntries = [];
 let identity         = 'The Stewart Family';
 let currentView      = 'today';
 let histTab          = 'log';
 let histDays         = 30;
 let lastDateKey      = '';
 let softTimer        = null;
-let dailyCommitDone  = false; // true once 23:58 commit has fired for today
+let dailyCommitDone  = false;
+let pendingTaskId    = null;  // taskId awaiting modal confirmation
+let pendingProactive = null;  // suppressUntil dateKey for in-progress proactive complete
 
 // ── DATE HELPERS ──────────────────────────────────────────────────────────────
 function edmontonNow() {
@@ -803,24 +863,154 @@ function loadProactiveDone() {
   }
 }
 
-// ── TOGGLE ────────────────────────────────────────────────────────────────────
+// ── TOGGLE & COMPLETE ─────────────────────────────────────────────────────────
 function toggleDone(taskId) {
   const dk = todayKey();
   const k  = doneKey(taskId, dk);
   const t  = tasks.find(x => x.id === taskId);
   if (doneLog[k]) {
+    // Uncheck — always direct, no modal
     delete doneLog[k];
     if (t?.type === 'once') { delete otoDone[taskId]; saveOtoDone(); }
-  } else {
-    doneLog[k] = { ts: new Date().toISOString(), who: identity, dataValue: '' };
-    if (t?.type === 'once') {
-      // Store targetDate as cycle marker (recyclable) or 'permanent' (pure OTO)
-      otoDone[taskId] = t.targetDate || 'permanent';
-      saveOtoDone();
+    saveDoneLog();
+    renderCurrentView(); updateRing(); updateTopBar();
+    scheduleSoftCommit();
+    return;
+  }
+  // Check — dispatch by completionType
+  switch (t?.completionType) {
+    case 'checklist': openChecklistModal(t);  break;
+    case 'data':      openDataModal(t);        break;
+    default:          completeTask(taskId, ''); break;
+  }
+}
+
+function completeTask(taskId, dataValue) {
+  const dk = todayKey();
+  const t  = tasks.find(x => x.id === taskId);
+  doneLog[doneKey(taskId, dk)] = { ts: new Date().toISOString(), who: identity, dataValue: dataValue || '' };
+  if (t?.type === 'once') {
+    otoDone[taskId] = t.targetDate || 'permanent';
+    saveOtoDone();
+    // Write data back to Tasks sheet if this data value affects scheduling
+    if (dataValue && t.dataTarget && t.dataTarget !== 'log') {
+      updateTaskField(taskId, t.dataTarget, dataValue);
     }
   }
   saveDoneLog();
-  renderToday(); updateRing(); updateTopBar();
+  renderCurrentView(); updateRing(); updateTopBar();
+  scheduleSoftCommit();
+}
+
+// ── CHECKLIST MODAL ───────────────────────────────────────────────────────────
+function openChecklistModal(task) {
+  pendingTaskId = task.id;
+  document.getElementById('checklist-modal-title').textContent = task.emoji + '  ' + task.name;
+  document.getElementById('checklist-items').innerHTML = task.checklistItems.map((item, i) =>
+    '<label class="checklist-item" id="cil_' + i + '">'
+    + '<input type="checkbox" id="ci_' + i + '" onchange="updateChecklistState(' + task.checklistItems.length + ')"/>'
+    + '<span>' + esc(item) + '</span></label>'
+  ).join('');
+  document.getElementById('checklist-confirm').disabled = true;
+  document.getElementById('checklist-modal-overlay').style.display = 'flex';
+}
+function updateChecklistState(total) {
+  document.querySelectorAll('#checklist-items .checklist-item').forEach(el =>
+    el.classList.toggle('checked', el.querySelector('input').checked)
+  );
+  document.getElementById('checklist-confirm').disabled =
+    document.querySelectorAll('#checklist-items input:checked').length < total;
+}
+function confirmChecklist() {
+  const tid = pendingTaskId, pro = pendingProactive;
+  pendingTaskId = null; pendingProactive = null;
+  closeChecklistModal();
+  if (!tid) return;
+  if (pro) finishProactiveComplete(tid, pro, 'checklist_confirmed');
+  else     completeTask(tid, 'checklist_confirmed');
+}
+function closeChecklistModal() {
+  document.getElementById('checklist-modal-overlay').style.display = 'none';
+}
+
+// ── DATA MODAL ────────────────────────────────────────────────────────────────
+function openDataModal(task) {
+  pendingTaskId = task.id;
+  document.getElementById('data-modal-title').textContent = task.emoji + '  ' + task.name;
+  document.getElementById('data-modal-sub').textContent  = task.notes ? task.notes.split('|')[0].trim() : '';
+  const inp = document.getElementById('data-modal-input');
+  inp.type        = task.dataType === 'date' ? 'date' : task.dataType === 'number' ? 'number' : 'text';
+  inp.value       = '';
+  inp.placeholder = task.dataType === 'date' ? '' : task.dataType === 'number' ? '0' : 'Enter value\u2026';
+  document.getElementById('data-modal-label').textContent =
+    task.dataType === 'date' ? 'ENTER DATE' : task.dataType === 'number' ? 'ENTER VALUE' : 'ENTER INFORMATION';
+  document.getElementById('data-modal-overlay').style.display = 'flex';
+}
+function confirmData() {
+  const val = document.getElementById('data-modal-input').value.trim();
+  if (!val) { alert('Please enter a value.'); return; }
+  const tid = pendingTaskId, pro = pendingProactive;
+  pendingTaskId = null; pendingProactive = null;
+  closeDataModal();
+  if (!tid) return;
+  if (pro) finishProactiveComplete(tid, pro, val);
+  else     completeTask(tid, val);
+}
+function closeDataModal() {
+  document.getElementById('data-modal-overlay').style.display = 'none';
+}
+
+// ── WRITE BACK TO TASKS SHEET ─────────────────────────────────────────────────
+// Used when data validation input should update a scheduling field (e.g. targetdate).
+async function updateTaskField(taskId, field, value) {
+  if (!API_URL) return;
+  try {
+    await fetch(API_URL, { method: 'POST',
+      body: JSON.stringify({ action: 'updateTask', taskId, updates: { [field]: value } }) });
+    setTimeout(syncFromSheet, 3000); // re-sync so updated task appears correctly
+  } catch (e) { console.warn('updateTaskField failed:', e); }
+}
+
+// ── PROACTIVE COMPLETE (domain view) ──────────────────────────────────────────
+function completeProactively(e, taskId) {
+  e.stopPropagation();
+  const t = tasks.find(x => x.id === taskId);
+  if (!t) return;
+  const dk     = todayKey();
+  const nextDk = getNextDueDateKey(t, dk) || t.targetDate || dk;
+  switch (t.completionType) {
+    case 'checklist':
+      pendingTaskId = taskId; pendingProactive = nextDk;
+      openChecklistModal(t); break;
+    case 'data':
+      pendingTaskId = taskId; pendingProactive = nextDk;
+      openDataModal(t); break;
+    default:
+      if (!confirm('Complete \u201c' + t.name + '\u201d ahead of schedule?')) return;
+      finishProactiveComplete(taskId, nextDk, '');
+  }
+}
+function finishProactiveComplete(taskId, suppressUntil, dataValue) {
+  const dk = todayKey();
+  const t  = tasks.find(x => x.id === taskId);
+  proactiveDone[taskId] = { doneOn: dk, suppressUntil: suppressUntil || dk };
+  saveProactiveDone();
+  doneLog[doneKey(taskId, dk)] = { ts: new Date().toISOString(), who: identity, dataValue: dataValue || '' };
+  saveDoneLog();
+  if (t?.type === 'once' && dataValue && t.dataTarget && t.dataTarget !== 'log') {
+    updateTaskField(taskId, t.dataTarget, dataValue);
+  }
+  renderCurrentView(); updateRing(); updateTopBar();
+  scheduleSoftCommit();
+}
+function clearProactive(e, taskId) {
+  e.stopPropagation();
+  delete proactiveDone[taskId];
+  saveProactiveDone();
+  const dk = todayKey();
+  delete doneLog[doneKey(taskId, dk)];
+  saveDoneLog();
+  renderCurrentView(); updateRing(); updateTopBar();
   scheduleSoftCommit();
 }
 
@@ -1139,56 +1329,164 @@ function getIndicatorStatus(indicatorTasks) {
   return 'amber'; // mix of done+pending, or all pending
 }
 
+// ── DOMAIN HELPERS ────────────────────────────────────────────────────────────
+
+// Returns { task, dateKey } for the task with the earliest upcoming due date.
+function getNextDueAction(taskList, dk) {
+  let earliest = null, earliestDk = null;
+  taskList.forEach(t => {
+    const check = (isDueOn(t, dk) && isDueToday(t, dk)) ? dk : getNextDueDateKey(t, dk);
+    if (!check) return;
+    if (!earliestDk || check < earliestDk) { earliest = t; earliestDk = check; }
+  });
+  return earliest ? { task: earliest, dateKey: earliestDk } : null;
+}
+
+// Returns the most recent completion entry across doneLog + serverLogEntries.
+function getLastCompleted(taskId) {
+  let lastDk = null, lastEntry = null;
+  Object.entries(doneLog).forEach(([k, v]) => {
+    const sep = k.lastIndexOf('__');
+    if (k.slice(0, sep) !== taskId) return;
+    const dk2 = k.slice(sep + 2);
+    if (!lastDk || dk2 > lastDk) { lastDk = dk2; lastEntry = v; }
+  });
+  serverLogEntries.filter(e => e.taskId === taskId).forEach(e => {
+    if (!lastDk || e.dateKey > lastDk) { lastDk = e.dateKey; lastEntry = { ts: e.completedAt, who: e.who }; }
+  });
+  return lastEntry ? { dk: lastDk, ...lastEntry } : null;
+}
+
+function toggleIndicator(e, el) { e.stopPropagation(); el.classList.toggle('open'); }
+function toggleDomainCard(el)   { el.classList.toggle('open'); }
+
 // ── RENDER: DOMAINS ───────────────────────────────────────────────────────────
 function renderDomains() {
+  const dk   = todayKey();
+  const MONS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const statusLabel = { green:'SATISFIED', amber:'IN PROGRESS', red:'OVERDUE', gray:'NO DATA' };
+  const statusCol   = { green:'#4ade80',   amber:'#facc15',     red:'#f87171', gray:'#333' };
   let html = '';
+
   SECTIONS.forEach(sec => {
-    const secTasks = tasks.filter(t => t.section === sec.key && !(t.type === 'once' && otoDone[t.id]));
-    // Group by health indicator name; ungrouped tasks go under '—'
+    const secTasks = tasks.filter(t => t.section === sec.key);
+
+    // Group by health indicator
     const indMap = {};
     secTasks.forEach(t => {
       const key = t.indicator || '\u2014';
       if (!indMap[key]) indMap[key] = [];
       indMap[key].push(t);
     });
-    const indicators  = Object.entries(indMap);
-    const total       = indicators.length;
-    const satisfied   = indicators.filter(([, tt]) => getIndicatorStatus(tt) === 'green').length;
-    const pct         = total ? Math.round(satisfied / total * 100) : null;
-    const domainCol   = pct === 100 ? '#4ade80' : pct !== null ? '#facc15' : '#444';
+    const indicators = Object.entries(indMap);
+    const total      = indicators.length;
+    const satisfied  = indicators.filter(([, tt]) => getIndicatorStatus(tt) === 'green').length;
+    const pct        = total ? Math.round(satisfied / total * 100) : null;
+    const domainCol  = pct === 100 ? '#4ade80' : pct !== null ? '#facc15' : '#444';
 
-    // Header dots — one per indicator
-    const dots = indicators.map(([, tt]) => {
-      const s = getIndicatorStatus(tt);
-      return '<div class="domain-dot ' + s + '"></div>';
-    }).join('');
+    // Header dots
+    const dots = indicators.map(([, tt]) =>
+      '<div class="domain-dot ' + getIndicatorStatus(tt) + '"></div>'
+    ).join('');
 
-    // Accordion detail rows
+    // Next due action label for the domain tile
+    const nextA = getNextDueAction(secTasks, dk);
+    let nextAHTML = '';
+    if (nextA) {
+      const isToday = nextA.dateKey === dk;
+      const [,nm,nd] = nextA.dateKey.split('-').map(Number);
+      nextAHTML = '<div class="domain-next-action">'
+        + esc(nextA.task.name) + ' &middot; ' + (isToday ? 'Today' : MONS[nm-1] + ' ' + nd)
+        + '</div>';
+    }
+
+    // Indicator accordion rows
     let detail = '';
     if (!indicators.length) {
       detail = '<div class="domains-empty">No tasks in this domain yet.</div>';
     } else {
-      const statusLabel = { green:'SATISFIED', amber:'IN PROGRESS', red:'OVERDUE', gray:'NO DATA' };
-      const statusCol   = { green:'#4ade80',   amber:'#facc15',     red:'#f87171', gray:'#444' };
-      const taskCol     = { done:'#4ade80',    pending:'#facc15',   missed:'#f87171', gray:'#333' };
-      const taskLabel   = { done:'done',       pending:'pending',   missed:'missed',  gray:'\u2014' };
       indicators.forEach(([indName, indTasks]) => {
-        const status = getIndicatorStatus(indTasks);
-        let taskRows = indTasks.map(t => {
-          const ts = getTaskRollingStatus(t);
-          return '<div class="ind-task-item">'
-            + '<div class="ind-task-dot" style="background:' + taskCol[ts] + '"></div>'
-            + '<div class="ind-task-name">' + esc(t.emoji) + ' ' + esc(t.name) + '</div>'
-            + '<div class="ind-task-meta">' + getFreqLabel(t) + ' &middot; ' + taskLabel[ts] + '</div>'
+        const status  = getIndicatorStatus(indTasks);
+
+        // Next due action for this indicator row
+        const nextI = getNextDueAction(indTasks, dk);
+        let indNextHTML = '';
+        if (nextI) {
+          const isTodayI = nextI.dateKey === dk && isDueToday(nextI.task, dk);
+          const isGAI    = isGetAheadOn(nextI.task, dk);
+          const [,im,id2] = nextI.dateKey.split('-').map(Number);
+          if (isTodayI)   indNextHTML = '<span class="tpt-pill today" style="font-size:7px;padding:2px 6px;margin-right:4px">IN TODAY</span>';
+          else if (isGAI) indNextHTML = '<span class="ind-next-action">GET AHEAD &middot; ' + MONS[im-1] + ' ' + id2 + '</span>';
+          else            indNextHTML = '<span class="ind-next-action">Next &middot; ' + MONS[im-1] + ' ' + id2 + '</span>';
+        }
+
+        // Task preview tiles
+        let tptHTML = '';
+        indTasks.forEach(t => {
+          const rs          = getTaskRollingStatus(t);
+          const inToday     = isDueToday(t, dk);
+          const doneToday   = isDone(t.id, dk);
+          const inGA        = isGetAheadEligible(t, dk);
+          const isProDone   = !!proactiveDone[t.id];
+
+          // Status pill
+          let sLabel, sCls, sCol;
+          if (doneToday || rs === 'done') {
+            sLabel = 'DONE';     sCls = 'done';    sCol = '#4ade80';
+          } else if (inToday) {
+            sLabel = 'IN TODAY'; sCls = 'today';   sCol = '#facc15';
+          } else if (inGA) {
+            const ndk2 = getNextDueDateKey(t, dk);
+            const days = ndk2 ? Math.round(daysBetween(dk, ndk2)) : 0;
+            sLabel = 'GET AHEAD' + (days > 0 ? ' \u00b7 ' + days + 'D' : '');
+            sCls = 'ahead'; sCol = '#7dd3fc';
+          } else if (rs === 'missed') {
+            sLabel = 'OVERDUE';  sCls = 'overdue'; sCol = '#f87171';
+          } else {
+            sLabel = '';         sCls = '';         sCol = '#2a2a2a';
+          }
+
+          // Meta line
+          const metaParts = [getFreqLabel(t)];
+          const ndk3 = !inToday ? getNextDueDateKey(t, dk) : null;
+          if (ndk3) { const [,nm2,nd2] = ndk3.split('-').map(Number); metaParts.push('Due ' + MONS[nm2-1] + ' ' + nd2); }
+          const lastC = getLastCompleted(t.id);
+          if (lastC) { const [,lm,ld] = lastC.dk.split('-').map(Number); metaParts.push('Last: ' + MONS[lm-1] + ' ' + ld); }
+
+          // PROACTIVE / CLEAR buttons — only show if task.proactive and not due today already
+          let actHTML = '';
+          if (t.proactive && !inToday) {
+            if (isProDone) {
+              actHTML = '<button class="tpt-btn proactive" disabled>PROACTIVE</button>'
+                + '<button class="tpt-btn clear-pro" onclick="clearProactive(event,\'' + escId(t.id) + '\')">CLEAR</button>';
+            } else if (!doneToday) {
+              actHTML = '<button class="tpt-btn proactive" onclick="completeProactively(event,\'' + escId(t.id) + '\')">PROACTIVE</button>';
+            }
+          }
+
+          tptHTML += '<div class="tpt">'
+            + '<div class="tpt-top">'
+            +   '<div class="tpt-dot" style="background:' + sCol + '"></div>'
+            +   '<span style="font-size:14px;flex-shrink:0">' + esc(t.emoji) + '</span>'
+            +   '<span class="tpt-name">' + esc(t.name) + '</span>'
+            +   (sCls ? '<span class="tpt-pill ' + sCls + '">' + sLabel + '</span>' : '')
+            + '</div>'
+            + '<div class="tpt-meta">' + metaParts.map(esc).join(' &middot; ') + '</div>'
+            + (actHTML ? '<div class="tpt-actions">' + actHTML + '</div>' : '')
             + '</div>';
-        }).join('');
-        detail += '<div class="ind-row">'
+        });
+
+        detail += '<div class="ind-row ind-expandable" onclick="toggleIndicator(event,this)">'
           + '<div class="ind-dot ' + status + '"></div>'
-          + '<div style="flex:1">'
-          +   '<div class="ind-name">' + esc(indName) + '</div>'
-          +   taskRows
+          + '<div style="flex:1;min-width:0">'
+          +   '<div style="display:flex;align-items:center;gap:6px">'
+          +     '<div class="ind-name" style="flex:1">' + esc(indName) + '</div>'
+          +     indNextHTML
+          +     '<div class="ind-status" style="color:' + statusCol[status] + '">' + statusLabel[status] + '</div>'
+          +     '<div class="ind-chevron">' + CHEV_SVG + '</div>'
+          +   '</div>'
+          +   '<div class="ind-tasks-expand">' + tptHTML + '</div>'
           + '</div>'
-          + '<div class="ind-status" style="color:' + statusCol[status] + '">' + statusLabel[status] + '</div>'
           + '</div>';
       });
     }
@@ -1197,15 +1495,17 @@ function renderDomains() {
       + '<div class="domain-card-header">'
       +   '<div class="domain-card-icon">' + sec.emoji + '</div>'
       +   '<div class="domain-card-title" style="color:' + sec.color + '">' + sec.label.toUpperCase() + '</div>'
+      +   nextAHTML
       +   '<div class="domain-dots">' + dots + '</div>'
       +   (pct !== null ? '<div class="domain-health-pct" style="color:' + domainCol + '">' + satisfied + '/' + total + '</div>' : '')
       + '</div>'
       + '<div class="domain-card-detail">' + detail + '</div>'
       + '</div>';
   });
-  document.getElementById('domains-content').innerHTML = html || '<div class="domains-empty">No tasks loaded yet.</div>';
+
+  document.getElementById('domains-content').innerHTML =
+    html || '<div class="domains-empty">No tasks loaded yet.</div>';
 }
-function toggleDomainCard(el) { el.classList.toggle('open'); }
 
 // ── RENDER: HISTORY ───────────────────────────────────────────────────────────
 function renderHistory() {
@@ -1420,8 +1720,10 @@ function updateCheckinIndicator() {
 function loadIdentity() {
   try {
     const s = localStorage.getItem('st_identity');
-    if (s) setIdentity(s, true); // hides modal, syncs buttons
+    if (s) { setIdentity(s, true); return; }
   } catch {}
+  // No stored identity — show the modal
+  document.getElementById('identity-modal-overlay').style.display = 'flex';
 }
 
 // ── VIEW SWITCHING ────────────────────────────────────────────────────────────
