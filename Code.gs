@@ -323,7 +323,7 @@ function getOrCreateReadme(ss) {
     ['Step 4', 'The app picks up new tasks on its next sync (every 5 minutes) or immediately on page refresh.', '', ''],
   ];
 
-  rows.forEach(r => sheet.appendRow(Array.isArray(r) ? r : [r]));
+  rows.forEach(r => sheet.appendRow(Array.isArray(r) && r.length ? r : ['']));
 
   // Basic formatting: title, section banners, column header rows
   sheet.getRange(1, 1).setFontSize(14).setFontWeight('bold');
@@ -524,7 +524,7 @@ function populateReadme() {
     ['3', 'The new domain card appears automatically on next sync. No code changes.', '', ''],
   ];
 
-  rows.forEach(r => sheet.appendRow(Array.isArray(r) ? r : [r]));
+  rows.forEach(r => sheet.appendRow(Array.isArray(r) && r.length ? r : ['']));
 
   // ── Formatting ────────────────────────────────────────────────────────────
   const lastRow = sheet.getLastRow();
