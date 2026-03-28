@@ -480,7 +480,7 @@
       <div class="modal-label" id="data-modal-label">ENTER VALUE</div>
       <input id="data-modal-input" class="modal-input" style="color-scheme:dark"/>
     </div>
-    <button class="modal-submit" style="margin-top:8px" onclick="confirmData()">CONFIRM COMPLETE</button>
+    <button id="data-modal-confirm" class="modal-submit" style="margin-top:8px" onclick="confirmData()">CONFIRM COMPLETE</button>
   </div>
 </div>
 
@@ -703,6 +703,7 @@ function normalizeTask(raw) {
       ? raw.checklistitems.split('|').map(s => s.trim()).filter(Boolean) : [],
     dataType:      (raw.datatype        || '').toLowerCase(),
     dataTarget:    (raw.datatarget      || 'log').toLowerCase(),
+    dataLabel:     (raw.datalabel       || '').trim(),
     proactive:     (raw.proactive       || '').toLowerCase() === 'yes',
     getaheadDays:   raw.getaheaddays    ? parseInt(raw.getaheaddays) : 0,
   };
@@ -979,6 +980,7 @@ function openDataModal(task) {
   inp.placeholder = task.dataType === 'date' ? '' : task.dataType === 'number' ? '0' : 'Enter value\u2026';
   document.getElementById('data-modal-label').textContent =
     task.dataType === 'date' ? 'ENTER DATE' : task.dataType === 'number' ? 'ENTER VALUE' : 'ENTER INFORMATION';
+  document.getElementById('data-modal-confirm').textContent = task.dataLabel ? task.dataLabel.toUpperCase() : 'CONFIRM COMPLETE';
   document.getElementById('data-modal-overlay').style.display = 'flex';
 }
 function confirmData() {
@@ -1514,7 +1516,7 @@ function renderDomains() {
           if (ndk3) { const [,nm2,nd2] = ndk3.split('-').map(Number); metaParts.push('Due ' + MONS[nm2-1] + ' ' + nd2); }
           const lastC = getLastCompleted(t.id);
           if (lastC) { const [,lm,ld] = lastC.dk.split('-').map(Number); metaParts.push('Last: ' + MONS[lm-1] + ' ' + ld); }
-          if (t.completionType === 'data' && lastC && lastC.dataValue) metaParts.push('Value: ' + lastC.dataValue);
+          if (t.completionType === 'data' && lastC && lastC.dataValue) metaParts.push((t.dataLabel || 'Value') + ': ' + lastC.dataValue);
 
           // PROACTIVE / CLEAR buttons — show for all tasks not due today
           let actHTML = '';
