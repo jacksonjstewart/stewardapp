@@ -234,6 +234,10 @@
     .checklist-item:last-child{border-bottom:none}
     .checklist-item input[type=checkbox]{width:16px;height:16px;accent-color:#4ade80;cursor:pointer;flex-shrink:0}
     .checklist-item.checked{color:#4ade80}
+    .checklist-cat-header{font-size:9px;font-weight:700;letter-spacing:2px;color:#555;padding:16px 0 6px;border-bottom:1px solid #1e1e1e;margin-top:4px}
+    .checklist-cat-header:first-child{padding-top:4px}
+    .checklist-progress-note{font-size:9px;color:#2a5a2a;letter-spacing:1px;margin-bottom:12px;display:none}
+    .checklist-progress-note.visible{display:block}
     /* ── Task preview tiles (domain indicator expand) ────────────────────── */
     .ind-row.ind-expandable{cursor:pointer;border-radius:6px;transition:background .15s}
     .ind-row.ind-expandable:hover{background:rgba(255,255,255,.02)}
@@ -464,7 +468,8 @@
       <span class="modal-title" id="checklist-modal-title"></span>
       <button class="modal-close" onclick="closeChecklistModal()">&times;</button>
     </div>
-    <div style="font-size:10px;color:#444;letter-spacing:1px;margin-bottom:16px">Check all items to confirm completion</div>
+    <div style="font-size:10px;color:#444;letter-spacing:1px;margin-bottom:8px">Check all items to confirm completion</div>
+    <div id="checklist-progress-note" class="checklist-progress-note">● PROGRESS SAVED — pick up where you left off</div>
     <div id="checklist-items"></div>
     <button id="checklist-confirm" class="modal-submit" style="margin-top:16px" onclick="confirmChecklist()" disabled>CONFIRM COMPLETE</button>
   </div>
@@ -626,6 +631,7 @@ let otoDone          = {};   // { taskId: 'YYYY-MM-DD' | 'permanent' }
 // proactiveDone: get-ahead / domain PROACTIVE completions before due date.
 // suppressUntil = the due date being covered; cleared automatically once passed.
 let proactiveDone    = {};   // { taskId: { doneOn, suppressUntil } }
+let checklistProgress = {};  // { taskId: { itemIndex: bool } } — persists partial progress
 let serverLogEntries = [];
 let identity         = 'The Stewart Family';
 let currentView      = 'today';
@@ -1019,29 +1025,56 @@ function completeTask(taskId, dataValue) {
 }
 
 // ── CHECKLIST MODAL ───────────────────────────────────────────────────────────
+function saveChecklistProgress()  { try { localStorage.setItem('st_clprog', JSON.stringify(checklistProgress)); } catch {} }
+function loadChecklistProgress()  { try { checklistProgress = JSON.parse(localStorage.getItem('st_clprog') || '{}'); } catch { checklistProgress = {}; } }
+
 function openChecklistModal(task) {
   pendingTaskId = task.id;
   document.getElementById('checklist-modal-title').textContent = task.emoji + '  ' + task.name;
-  document.getElementById('checklist-items').innerHTML = task.checklistItems.map((item, i) =>
-    '<label class="checklist-item" id="cil_' + i + '">'
-    + '<input type="checkbox" id="ci_' + i + '" onchange="updateChecklistState(' + task.checklistItems.length + ')"/>'
-    + '<span>' + esc(item) + '</span></label>'
-  ).join('');
-  document.getElementById('checklist-confirm').disabled = true;
+  const saved    = checklistProgress[task.id] || {};
+  const hasSaved = Object.keys(saved).length > 0;
+  let html = '', checkableCount = 0;
+  task.checklistItems.forEach((item, i) => {
+    // Items matching "A. CATEGORY NAME" pattern are non-checkable section headers
+    if (/^[A-Z]\.\s+/.test(item)) {
+      html += '<div class="checklist-cat-header">' + esc(item) + '</div>';
+    } else {
+      const checked = saved[i] ? ' checked' : '';
+      html += '<label class="checklist-item' + (saved[i] ? ' checked' : '') + '" id="cil_' + i + '">'
+        + '<input type="checkbox" id="ci_' + i + '"' + checked + ' data-idx="' + i + '" onchange="updateChecklistState(\'' + task.id + '\')" />'
+        + '<span>' + esc(item) + '</span></label>';
+      checkableCount++;
+    }
+  });
+  document.getElementById('checklist-items').innerHTML = html;
+  const note = document.getElementById('checklist-progress-note');
+  note.classList.toggle('visible', hasSaved);
+  const checked = document.querySelectorAll('#checklist-items input:checked').length;
+  document.getElementById('checklist-confirm').disabled = checked < checkableCount;
   document.getElementById('checklist-modal-overlay').style.display = 'flex';
 }
-function updateChecklistState(total) {
-  document.querySelectorAll('#checklist-items .checklist-item').forEach(el =>
-    el.classList.toggle('checked', el.querySelector('input').checked)
-  );
-  document.getElementById('checklist-confirm').disabled =
-    document.querySelectorAll('#checklist-items input:checked').length < total;
+function updateChecklistState(taskId) {
+  const progress = {};
+  let total = 0, checked = 0;
+  document.querySelectorAll('#checklist-items input[type=checkbox]').forEach(inp => {
+    const i = parseInt(inp.dataset.idx);
+    progress[i] = inp.checked;
+    inp.closest('label').classList.toggle('checked', inp.checked);
+    total++; if (inp.checked) checked++;
+  });
+  // Save partial progress — cleared only on confirm
+  if (checked > 0) { checklistProgress[taskId] = progress; saveChecklistProgress(); }
+  else { delete checklistProgress[taskId]; saveChecklistProgress(); }
+  document.getElementById('checklist-progress-note').classList.toggle('visible', checked > 0 && checked < total);
+  document.getElementById('checklist-confirm').disabled = checked < total;
 }
 function confirmChecklist() {
   const tid = pendingTaskId, pro = pendingProactive;
   pendingTaskId = null; pendingProactive = null;
   closeChecklistModal();
   if (!tid) return;
+  // Clear saved progress on completion
+  delete checklistProgress[tid]; saveChecklistProgress();
   if (pro) finishProactiveComplete(tid, pro, 'checklist_confirmed');
   else     completeTask(tid, 'checklist_confirmed');
 }
@@ -2140,7 +2173,7 @@ function populateSectionDropdown() {
 // ── INIT ──────────────────────────────────────────────────────────────────────
 async function init() {
   lastDateKey = todayKey();
-  loadDoneLog(); loadOtoDone(); loadProactiveDone(); loadIdentity(); updateClock();
+  loadDoneLog(); loadOtoDone(); loadProactiveDone(); loadChecklistProgress(); loadIdentity(); updateClock();
   setInterval(updateClock,       10000);
   setInterval(checkMidnight,     60000);
   setInterval(syncFromSheet,     SYNC_MS);
