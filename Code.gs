@@ -154,6 +154,7 @@ function addTask(task) {
     dotm:           task.dotm           || '',
     dotw_ord:       task.dotw_ord       || '',
     yearmonth:      task.yearMonth      || '',
+    yearmonth2:     task.yearMonth2     || '',
     anchordate:     task.anchorDate     || '',
     notes:          task.notes          || '',
     type:           task.type           || 'recurring',
@@ -163,6 +164,7 @@ function addTask(task) {
     datatype:       task.dataType       || '',
     datatarget:     task.dataTarget     || 'log',
     datalabel:         task.dataLabel         || '',
+    datatargettask:    task.dataTargetTask    || '',
     overdueGraceDays:  String(task.overdueGraceDays || 0),
     getaheaddays:      String(task.getaheadDays || 0),
   };

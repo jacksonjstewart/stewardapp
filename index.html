@@ -704,7 +704,9 @@ function normalizeTask(raw) {
     dataType:         (raw.datatype           || '').toLowerCase(),
     dataTarget:       (raw.datatarget        || 'log').toLowerCase(),
     dataLabel:        (raw.datalabel         || '').trim(),
+    dataTargetTask:   (raw.datatargettask    || '').trim(),
     overdueGraceDays: raw.overdueGraceDays   ? parseInt(raw.overdueGraceDays) : 0,
+    yearMonth2:       raw.yearmonth2         ? parseInt(raw.yearmonth2)        : null,
     proactive:     (raw.proactive       || '').toLowerCase() === 'yes',
     getaheadDays:   raw.getaheaddays    ? parseInt(raw.getaheaddays) : 0,
   };
@@ -740,6 +742,15 @@ function isDueOn(task, dk) {
       if (task.dotm)                              return d === task.dotm;
       if (task.dotwOrd && task.dow.length)        return dow === task.dow[0] && Math.ceil(d/7) === task.dotwOrd;
       return false;
+    case 'biannual': {
+      // Fires on two specific month+day combinations per year
+      const ym1 = task.yearMonth, ym2 = task.yearMonth2;
+      if (!ym1 || !ym2) return false;
+      const matchMonth = m === ym1 || m === ym2;
+      if (!matchMonth) return false;
+      if (task.dotm) return d === task.dotm;
+      return false;
+    }
     default: return false;
   }
 }
@@ -770,6 +781,13 @@ function getFreqLabel(task) {
     case 'biweekly': return 'Every other week';
     case 'monthly':  return task.dotm ? 'Monthly \u00b7 ' + task.dotm + 'th' : 'Monthly';
     case 'yearly':   return task.yearMonth ? 'Yearly \u00b7 ' + MONS[task.yearMonth-1] : 'Yearly';
+    case 'biannual': {
+      const MONS2 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const m1 = task.yearMonth  ? MONS2[task.yearMonth  - 1] : '';
+      const m2 = task.yearMonth2 ? MONS2[task.yearMonth2 - 1] : '';
+      const d2 = task.dotm ? ' ' + task.dotm : '';
+      return (m1 && m2) ? m1 + d2 + ' & ' + m2 + d2 + ' · Biannual' : 'Biannual';
+    }
     case 'once':     return task.targetDate ? 'Due ' + task.targetDate : 'One time';
     default:         return task.freq || '';
   }
@@ -801,6 +819,12 @@ function getTypicalDueLabel(task) {
       if (m && d) return m + ' ' + d + ' annually';
       if (m)      return m + ' annually';
       return 'Annually';
+    }
+    case 'biannual': {
+      const m1 = task.yearMonth  ? MONS[task.yearMonth  - 1] : '';
+      const m2 = task.yearMonth2 ? MONS[task.yearMonth2 - 1] : '';
+      const d3 = task.dotm ? ' ' + task.dotm : '';
+      return (m1 && m2) ? m1 + d3 + ' & ' + m2 + d3 + ' annually' : 'Biannual';
     }
     case 'once': {
       if (task.targetDate) {
@@ -929,10 +953,11 @@ function completeTask(taskId, dataValue) {
   if (t?.type === 'once') {
     otoDone[taskId] = t.targetDate || 'permanent';
     saveOtoDone();
-    // Write data back to Tasks sheet if this data value affects scheduling
-    if (dataValue && t.dataTarget && t.dataTarget !== 'log') {
-      updateTaskField(taskId, t.dataTarget, dataValue);
-    }
+  }
+  // Write data back to Tasks sheet: dataTargetTask overrides which task gets updated
+  if (dataValue && t?.dataTarget && t.dataTarget !== 'log') {
+    const writeTaskId = t.dataTargetTask || taskId;
+    updateTaskField(writeTaskId, t.dataTarget, dataValue);
   }
   saveDoneLog();
   renderCurrentView(); updateRing(); updateTopBar();
@@ -1034,8 +1059,10 @@ function finishProactiveComplete(taskId, suppressUntil, dataValue) {
   saveProactiveDone();
   doneLog[doneKey(taskId, dk)] = { ts: new Date().toISOString(), who: identity, dataValue: dataValue || '' };
   saveDoneLog();
-  if (t?.type === 'once' && dataValue && t.dataTarget && t.dataTarget !== 'log') {
-    updateTaskField(taskId, t.dataTarget, dataValue);
+  // Write data back to Tasks sheet: dataTargetTask overrides which task gets updated
+  if (dataValue && t?.dataTarget && t.dataTarget !== 'log') {
+    const writeTaskId = t.dataTargetTask || taskId;
+    updateTaskField(writeTaskId, t.dataTarget, dataValue);
   }
   renderCurrentView(); updateRing(); updateTopBar();
   scheduleSoftCommit();
@@ -1353,7 +1380,7 @@ function getTaskRollingStatus(task) {
   }
   const today   = edmontonNow();
   const todayDk = getDateKey(today);
-  const maxDays = { daily: 2, weekly: 14, biweekly: 28, monthly: 62, yearly: 400 };
+  const maxDays = { daily: 2, weekly: 14, biweekly: 28, monthly: 62, biannual: 200, yearly: 400 };
   const lookback = maxDays[task.freq] || 30;
   // Walk backwards to find the most recent due date
   let lastDk = null;
@@ -1386,7 +1413,7 @@ function isHardOverdue(task, dk) {
   if (getTaskRollingStatus(task) !== 'missed') return false;
   if (!task.overdueGraceDays) return true;
   const today   = edmontonNow();
-  const maxDays = { daily: 2, weekly: 14, biweekly: 28, monthly: 62, yearly: 400 };
+  const maxDays = { daily: 2, weekly: 14, biweekly: 28, monthly: 62, biannual: 200, yearly: 400 };
   const lookback = maxDays[task.freq] || 30;
   for (let i = 1; i <= lookback; i++) {
     const d = new Date(today); d.setDate(today.getDate() - i);
