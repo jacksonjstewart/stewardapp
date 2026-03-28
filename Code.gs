@@ -155,6 +155,7 @@ function addTask(task) {
     dotw_ord:       task.dotw_ord       || '',
     yearmonth:      task.yearMonth      || '',
     yearmonth2:     task.yearMonth2     || '',
+    freqmonths:     task.freqMonths     || '',
     anchordate:     task.anchorDate     || '',
     notes:          task.notes          || '',
     type:           task.type           || 'recurring',

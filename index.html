@@ -707,6 +707,7 @@ function normalizeTask(raw) {
     dataTargetTask:   (raw.datatargettask    || '').trim(),
     overdueGraceDays: raw.overdueGraceDays   ? parseInt(raw.overdueGraceDays) : 0,
     yearMonth2:       raw.yearmonth2         ? parseInt(raw.yearmonth2)        : null,
+    freqMonths:       raw.freqmonths         ? parseInt(raw.freqmonths)        : null,
     proactive:     (raw.proactive       || '').toLowerCase() === 'yes',
     getaheadDays:   raw.getaheaddays    ? parseInt(raw.getaheaddays) : 0,
   };
@@ -742,6 +743,16 @@ function isDueOn(task, dk) {
       if (task.dotm)                              return d === task.dotm;
       if (task.dotwOrd && task.dow.length)        return dow === task.dow[0] && Math.ceil(d/7) === task.dotwOrd;
       return false;
+    case 'nmonthly': {
+      // Fires every N months from an anchor date, on the anchor's day-of-month
+      if (!task.anchorDate) return false;
+      const anchor    = new Date(task.anchorDate + 'T00:00:00');
+      const dotm      = task.dotm || anchor.getDate();
+      if (d !== dotm) return false;
+      const interval  = task.freqMonths || 1;
+      const monthsDiff = (y - anchor.getFullYear()) * 12 + (m - 1 - anchor.getMonth());
+      return monthsDiff >= 0 && monthsDiff % interval === 0;
+    }
     case 'biannual': {
       // Fires on two specific month+day combinations per year
       const ym1 = task.yearMonth, ym2 = task.yearMonth2;
@@ -781,6 +792,10 @@ function getFreqLabel(task) {
     case 'biweekly': return 'Every other week';
     case 'monthly':  return task.dotm ? 'Monthly \u00b7 ' + task.dotm + 'th' : 'Monthly';
     case 'yearly':   return task.yearMonth ? 'Yearly \u00b7 ' + MONS[task.yearMonth-1] : 'Yearly';
+    case 'nmonthly': {
+      const n = task.freqMonths || 1;
+      return 'Every ' + n + ' months';
+    }
     case 'biannual': {
       const MONS2 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       const m1 = task.yearMonth  ? MONS2[task.yearMonth  - 1] : '';
@@ -819,6 +834,11 @@ function getTypicalDueLabel(task) {
       if (m && d) return m + ' ' + d + ' annually';
       if (m)      return m + ' annually';
       return 'Annually';
+    }
+    case 'nmonthly': {
+      const n  = task.freqMonths || 1;
+      const dy = task.dotm || (task.anchorDate ? parseInt(task.anchorDate.split('-')[2]) : '');
+      return dy ? ord(dy) + ' · Every ' + n + ' months' : 'Every ' + n + ' months';
     }
     case 'biannual': {
       const m1 = task.yearMonth  ? MONS[task.yearMonth  - 1] : '';
@@ -1381,7 +1401,7 @@ function getTaskRollingStatus(task) {
   const today   = edmontonNow();
   const todayDk = getDateKey(today);
   const maxDays = { daily: 2, weekly: 14, biweekly: 28, monthly: 62, biannual: 200, yearly: 400 };
-  const lookback = maxDays[task.freq] || 30;
+  const lookback = task.freq === 'nmonthly' ? (task.freqMonths || 1) * 32 : (maxDays[task.freq] || 30);
   // Walk backwards to find the most recent due date
   let lastDk = null;
   for (let i = 0; i <= lookback; i++) {
@@ -1414,7 +1434,7 @@ function isHardOverdue(task, dk) {
   if (!task.overdueGraceDays) return true;
   const today   = edmontonNow();
   const maxDays = { daily: 2, weekly: 14, biweekly: 28, monthly: 62, biannual: 200, yearly: 400 };
-  const lookback = maxDays[task.freq] || 30;
+  const lookback = task.freq === 'nmonthly' ? (task.freqMonths || 1) * 32 : (maxDays[task.freq] || 30);
   for (let i = 1; i <= lookback; i++) {
     const d = new Date(today); d.setDate(today.getDate() - i);
     const lastDk = getDateKey(d);
