@@ -45,8 +45,11 @@ function commitEntries(entries, dateKey) {
   const headers  = data[0];
   const dateIdx  = headers.indexOf('dateKey');
 
+  // Prune rows older than 365 days, then replace today's rows
+  const cutoff = fmtDate(new Date(Date.now() - 365 * 86400000));
   for (let r = data.length - 1; r >= 1; r--) {
-    if (String(data[r][dateIdx]) === String(dk)) logSheet.deleteRow(r + 1);
+    const rowDk = String(data[r][dateIdx]);
+    if (rowDk < cutoff || rowDk === String(dk)) logSheet.deleteRow(r + 1);
   }
 
   (entries || []).forEach(entry => {
