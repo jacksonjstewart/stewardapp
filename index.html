@@ -747,14 +747,17 @@ function isDueOn(task, dk) {
       if (task.dotwOrd && task.dow.length)        return dow === task.dow[0] && Math.ceil(d/7) === task.dotwOrd;
       return false;
     case 'nmonthly': {
-      // Fires every N months from an anchor date, on the anchor's day-of-month
+      // Fires every N months from an anchor month. Supports two day patterns:
+      //   dotwOrd + dow → e.g. 3rd Tuesday
+      //   dotm          → e.g. 10th of the month
       if (!task.anchorDate) return false;
-      const anchor    = new Date(task.anchorDate + 'T00:00:00');
-      const dotm      = task.dotm || anchor.getDate();
-      if (d !== dotm) return false;
-      const interval  = task.freqMonths || 1;
+      const anchor     = new Date(task.anchorDate + 'T00:00:00');
+      const interval   = task.freqMonths || 1;
       const monthsDiff = (y - anchor.getFullYear()) * 12 + (m - 1 - anchor.getMonth());
-      return monthsDiff >= 0 && monthsDiff % interval === 0;
+      if (monthsDiff < 0 || monthsDiff % interval !== 0) return false;
+      if (task.dotwOrd && task.dow && task.dow.length)
+        return dow === task.dow[0] && Math.ceil(d / 7) === task.dotwOrd;
+      return d === (task.dotm || anchor.getDate());
     }
     case 'biannual': {
       // Fires on two specific month+day combinations per year
@@ -839,7 +842,9 @@ function getTypicalDueLabel(task) {
       return 'Annually';
     }
     case 'nmonthly': {
-      const n  = task.freqMonths || 1;
+      const n = task.freqMonths || 1;
+      if (task.dotwOrd && task.dow && task.dow.length)
+        return ord(task.dotwOrd) + ' ' + DAYS[task.dow[0]] + ' · Every ' + n + ' months';
       const dy = task.dotm || (task.anchorDate ? parseInt(task.anchorDate.split('-')[2]) : '');
       return dy ? ord(dy) + ' · Every ' + n + ' months' : 'Every ' + n + ' months';
     }
