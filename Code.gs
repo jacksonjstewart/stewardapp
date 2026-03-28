@@ -162,8 +162,9 @@ function addTask(task) {
     checklistitems: task.checklistItems || '',
     datatype:       task.dataType       || '',
     datatarget:     task.dataTarget     || 'log',
-    datalabel:      task.dataLabel      || '',
-    getaheaddays:   String(task.getaheadDays || 0),
+    datalabel:         task.dataLabel         || '',
+    overdueGraceDays:  String(task.overdueGraceDays || 0),
+    getaheaddays:      String(task.getaheadDays || 0),
   };
 
   const row = headers.map(h => rowMap[h] !== undefined ? rowMap[h] : '');

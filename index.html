@@ -701,9 +701,10 @@ function normalizeTask(raw) {
     completionType:(raw.completiontype  || 'categorical').toLowerCase(),
     checklistItems: raw.checklistitems
       ? raw.checklistitems.split('|').map(s => s.trim()).filter(Boolean) : [],
-    dataType:      (raw.datatype        || '').toLowerCase(),
-    dataTarget:    (raw.datatarget      || 'log').toLowerCase(),
-    dataLabel:     (raw.datalabel       || '').trim(),
+    dataType:         (raw.datatype           || '').toLowerCase(),
+    dataTarget:       (raw.datatarget        || 'log').toLowerCase(),
+    dataLabel:        (raw.datalabel         || '').trim(),
+    overdueGraceDays: raw.overdueGraceDays   ? parseInt(raw.overdueGraceDays) : 0,
     proactive:     (raw.proactive       || '').toLowerCase() === 'yes',
     getaheadDays:   raw.getaheaddays    ? parseInt(raw.getaheaddays) : 0,
   };
@@ -1379,11 +1380,31 @@ function getTaskRollingStatus(task) {
   return 'missed';
 }
 
+// Returns true if task is overdue AND has exceeded its overdueGraceDays window.
+// Tasks with no grace (overdueGraceDays = 0) go RED immediately on miss.
+function isHardOverdue(task, dk) {
+  if (getTaskRollingStatus(task) !== 'missed') return false;
+  if (!task.overdueGraceDays) return true;
+  const today   = edmontonNow();
+  const maxDays = { daily: 2, weekly: 14, biweekly: 28, monthly: 62, yearly: 400 };
+  const lookback = maxDays[task.freq] || 30;
+  for (let i = 1; i <= lookback; i++) {
+    const d = new Date(today); d.setDate(today.getDate() - i);
+    const lastDk = getDateKey(d);
+    if (isDueOn(task, lastDk)) return Math.round(daysBetween(lastDk, dk)) > task.overdueGraceDays;
+  }
+  return true;
+}
+
 function getIndicatorStatus(indicatorTasks, dk) {
   if (!indicatorTasks.length) return 'gray';
-  if (indicatorTasks.some(t => getTaskRollingStatus(t) === 'missed')) return 'red';
+  // RED: any task overdue beyond its grace period
+  if (indicatorTasks.some(t => isHardOverdue(t, dk))) return 'red';
+  // AMBER: any incomplete task in today/GET AHEAD, or overdue but within grace
   const hasAmber = indicatorTasks.some(t => {
-    if (getTaskRollingStatus(t) === 'done') return false;
+    const rs = getTaskRollingStatus(t);
+    if (rs === 'done') return false;
+    if (rs === 'missed') return true; // not hard-overdue (checked above), so within grace
     return isDueOn(t, dk) || isGetAheadEligible(t, dk);
   });
   if (hasAmber) return 'amber';
