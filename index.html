@@ -760,11 +760,12 @@ function isDueOn(task, dk) {
       return d === (task.dotm || anchor.getDate());
     }
     case 'biannual': {
-      // Fires on two specific month+day combinations per year
+      // Fires in two specific months per year. Supports dotm OR dotwOrd+dow.
       const ym1 = task.yearMonth, ym2 = task.yearMonth2;
       if (!ym1 || !ym2) return false;
-      const matchMonth = m === ym1 || m === ym2;
-      if (!matchMonth) return false;
+      if (m !== ym1 && m !== ym2) return false;
+      if (task.dotwOrd && task.dow && task.dow.length)
+        return dow === task.dow[0] && Math.ceil(d / 7) === task.dotwOrd;
       if (task.dotm) return d === task.dotm;
       return false;
     }
@@ -804,8 +805,14 @@ function getFreqLabel(task) {
     }
     case 'biannual': {
       const MONS2 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const DAYS2 = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      const ord2  = n => n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : n + 'th';
       const m1 = task.yearMonth  ? MONS2[task.yearMonth  - 1] : '';
       const m2 = task.yearMonth2 ? MONS2[task.yearMonth2 - 1] : '';
+      if (task.dotwOrd && task.dow && task.dow.length) {
+        const dl = ord2(task.dotwOrd) + ' ' + DAYS2[task.dow[0]];
+        return (m1 && m2) ? dl + ' of ' + m1 + ' & ' + m2 + ' · Biannual' : 'Biannual';
+      }
       const d2 = task.dotm ? ' ' + task.dotm : '';
       return (m1 && m2) ? m1 + d2 + ' & ' + m2 + d2 + ' · Biannual' : 'Biannual';
     }
@@ -851,6 +858,10 @@ function getTypicalDueLabel(task) {
     case 'biannual': {
       const m1 = task.yearMonth  ? MONS[task.yearMonth  - 1] : '';
       const m2 = task.yearMonth2 ? MONS[task.yearMonth2 - 1] : '';
+      if (task.dotwOrd && task.dow && task.dow.length) {
+        const dl = ord(task.dotwOrd) + ' ' + DAYS[task.dow[0]];
+        return (m1 && m2) ? dl + ' of ' + m1 + ' & ' + m2 + ' annually' : 'Biannual';
+      }
       const d3 = task.dotm ? ' ' + task.dotm : '';
       return (m1 && m2) ? m1 + d3 + ' & ' + m2 + d3 + ' annually' : 'Biannual';
     }
