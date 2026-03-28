@@ -720,9 +720,11 @@ function isDueOn(task, dk) {
   const date = new Date(y, m - 1, d);
   const dow  = date.getDay();
   if (task.type === 'once') {
-    // No targetDate = not yet scheduled by its booking task → invisible.
-    // Has targetDate = appears only on that exact date.
+    // No targetDate    = not yet scheduled by booking task → invisible.
+    // targetDate = 'always' = pure OTO, show every day until permanently done.
+    // targetDate = 'YYYY-MM-DD' = schedulable OTO, show only on that date.
     if (!task.targetDate) return false;
+    if (task.targetDate === 'always') return true;
     return dk === task.targetDate;
   }
   switch (task.freq) {
