@@ -156,6 +156,8 @@ function addTask(task) {
     yearmonth:      task.yearMonth      || '',
     yearmonth2:     task.yearMonth2     || '',
     freqmonths:     task.freqMonths     || '',
+    seasonstart:    task.seasonStart    || '',
+    seasonend:      task.seasonEnd      || '',
     anchordate:     task.anchorDate     || '',
     notes:          task.notes          || '',
     type:           task.type           || 'recurring',
