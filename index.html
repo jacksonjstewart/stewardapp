@@ -720,9 +720,10 @@ function isDueOn(task, dk) {
   const date = new Date(y, m - 1, d);
   const dow  = date.getDay();
   if (task.type === 'once') {
-    // Option A: recyclable OTO (has targetDate) — appears ONLY on exact targetDate.
-    // Pure OTO (no targetDate) — appears every day until permanently done.
-    return task.targetDate ? dk === task.targetDate : true;
+    // No targetDate = not yet scheduled by its booking task → invisible.
+    // Has targetDate = appears only on that exact date.
+    if (!task.targetDate) return false;
+    return dk === task.targetDate;
   }
   switch (task.freq) {
     case 'daily':    return true;
@@ -1396,7 +1397,9 @@ function renderWeekDetail(idx) {
 
 function getTaskRollingStatus(task) {
   if (task.type === 'once') {
-    return otoDone[task.id] ? 'done' : 'pending';
+    if (otoDone[task.id]) return 'done';
+    if (!task.targetDate) return 'gray'; // not yet scheduled by booking task
+    return 'pending';
   }
   const today   = edmontonNow();
   const todayDk = getDateKey(today);
