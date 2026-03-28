@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "steward",
+      "runtimeExecutable": "/usr/bin/perl.exe",
+      "runtimeArgs": ["serve.pl"],
+      "port": 8080
+    }
+  ]
+}
