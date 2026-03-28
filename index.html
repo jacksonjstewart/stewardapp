@@ -82,6 +82,7 @@
     .task-row.get-ahead:hover{border-color:rgba(125,211,252,.22);background:rgba(125,211,252,.07)}
     .task-row.get-ahead .task-name{color:#7dd3fc}.task-row.get-ahead .task-freq{color:#164e63}
     .get-ahead-pill{background:rgba(125,211,252,.12);border:1px solid rgba(125,211,252,.25);color:#38bdf8;font-size:8px;font-weight:700;letter-spacing:1.5px;padding:3px 8px;border-radius:99px;flex-shrink:0;white-space:nowrap}
+    .overdue-push-pill{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#f59e0b;font-size:8px;font-weight:700;letter-spacing:1.5px;padding:3px 8px;border-radius:99px;flex-shrink:0;white-space:nowrap}
     .task-row{display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:11px;cursor:pointer;margin-bottom:5px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.055);transition:background .15s,border-color .15s,transform .1s;user-select:none;-webkit-tap-highlight-color:transparent}
     .task-row:hover{background:rgba(255,255,255,.035);border-color:rgba(255,255,255,.08)}
     .task-row:active{transform:scale(.99)}.task-row.done{background:rgba(74,222,128,.04);border-color:rgba(74,222,128,.12)}
@@ -324,13 +325,7 @@
     <div class="modal-row">
       <div class="modal-field" style="flex:1">
         <div class="modal-label">SECTION</div>
-        <select id="m-section" class="modal-select" onchange="updateIndicatorSuggestions()">
-          <option value="vehicle">Vehicle</option>
-          <option value="digital">Digital</option>
-          <option value="home">Household</option>
-          <option value="finance">Finance</option>
-          <option value="family">Family</option>
-        </select>
+        <select id="m-section" class="modal-select" onchange="updateIndicatorSuggestions()"></select>
       </div>
       <div class="modal-field" style="flex:1">
         <div class="modal-label">TYPE</div>
@@ -609,12 +604,14 @@ const CSV_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSStX24zLoqGqB
 const API_URL  = 'https://script.google.com/macros/s/AKfycbxxbAYzXNlJDxJYFiqBHg5XJvsJn8odS1g5VQPG0Ekkp7No9Y6scysk3whX-QwLBcNJ/exec';
 const SYNC_MS  = 5 * 60 * 1000;
 const TZ       = 'America/Edmonton';
-const SECTIONS = [
-  { key: 'vehicle', label: 'Vehicle',   emoji: '&#x1F697;', color: '#e8e8e8' },
-  { key: 'digital', label: 'Digital',   emoji: '&#x1F4BB;', color: '#7dd3fc' },
-  { key: 'home',    label: 'Household', emoji: '&#x1F3E0;', color: '#4ade80' },
-  { key: 'finance', label: 'Finance',   emoji: '&#x1F4B3;', color: '#facc15' },
-  { key: 'family',  label: 'Family',    emoji: '&#x1F338;', color: '#f4a4b8' },
+// Sections are loaded from the sheet at startup (loadSections).
+// This fallback keeps the app functional while offline or before the first load.
+let SECTIONS = [
+  { key: 'vehicle', label: 'Vehicle',   emoji: '🚗', color: '#e8e8e8' },
+  { key: 'digital', label: 'Digital',   emoji: '💻', color: '#7dd3fc' },
+  { key: 'home',    label: 'Household', emoji: '🏠', color: '#4ade80' },
+  { key: 'finance', label: 'Finance',   emoji: '💳', color: '#facc15' },
+  { key: 'family',  label: 'Family',    emoji: '🌸', color: '#f4a4b8' },
 ];
 const CHECK_SVG = '<svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 3.5l3 3 5-5" stroke="#0a0a0a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const CHEV_SVG  = '<svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -773,6 +770,44 @@ function getFreqLabel(task) {
     case 'yearly':   return task.yearMonth ? 'Yearly \u00b7 ' + MONS[task.yearMonth-1] : 'Yearly';
     case 'once':     return task.targetDate ? 'Due ' + task.targetDate : 'One time';
     default:         return task.freq || '';
+  }
+}
+// Returns a human-readable specific schedule label for the domain tile meta line.
+function getTypicalDueLabel(task) {
+  const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const MONS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const ord  = n => n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : n + 'th';
+  switch (task.freq) {
+    case 'daily': return 'Daily';
+    case 'weekly': {
+      const days = task.dow && task.dow.length ? task.dow.map(d => DAYS[d]).join(', ') : '';
+      return days ? days + ' \u00b7 Weekly' : 'Weekly';
+    }
+    case 'biweekly': {
+      const days = task.dow && task.dow.length ? task.dow.map(d => DAYS[d]).join(', ') : '';
+      return days ? days + ' \u00b7 Biweekly' : 'Every other week';
+    }
+    case 'monthly': {
+      if (task.dotm)                           return ord(task.dotm) + ' of each month';
+      if (task.dotwOrd && task.dow && task.dow.length)
+        return ord(task.dotwOrd) + ' ' + DAYS[task.dow[0]] + ' monthly';
+      return 'Monthly';
+    }
+    case 'yearly': {
+      const m = task.yearMonth ? MONS[task.yearMonth - 1] : '';
+      const d = task.dotm || '';
+      if (m && d) return m + ' ' + d + ' annually';
+      if (m)      return m + ' annually';
+      return 'Annually';
+    }
+    case 'once': {
+      if (task.targetDate) {
+        const [y, mo, dy] = task.targetDate.split('-').map(Number);
+        return MONS[mo-1] + ' ' + dy + ', ' + y + ' \u00b7 One-time';
+      }
+      return 'One-time';
+    }
+    default: return task.freq || '';
   }
 }
 
@@ -986,7 +1021,6 @@ function completeProactively(e, taskId) {
       pendingTaskId = taskId; pendingProactive = nextDk;
       openDataModal(t); break;
     default:
-      if (!confirm('Complete \u201c' + t.name + '\u201d ahead of schedule?')) return;
       finishProactiveComplete(taskId, nextDk, '');
   }
 }
@@ -1115,11 +1149,14 @@ function renderToday() {
   if (loadEl) loadEl.remove();
 
   const allDue    = tasks.filter(t => isDueToday(t, dk));
+  const overdue   = tasks.filter(t => !isDueToday(t, dk) && !isGetAheadEligible(t, dk) && getTaskRollingStatus(t) === 'missed');
   const otos      = allDue.filter(t => t.type === 'once');
   const recurring = allDue.filter(t => t.type !== 'once');
+  const overdueOtos = overdue.filter(t => t.type === 'once');
+  const overdueRec  = overdue.filter(t => t.type !== 'once');
   const getAheads = tasks.filter(t => isGetAheadEligible(t, dk));
 
-  if (!allDue.length && !getAheads.length) {
+  if (!allDue.length && !overdue.length && !getAheads.length) {
     container.innerHTML = '';
     emptyEl.style.display = tasks.length ? 'block' : 'none';
     if (!tasks.length) container.innerHTML =
@@ -1129,24 +1166,27 @@ function renderToday() {
   emptyEl.style.display = 'none';
   let html = '';
 
-  // ── OTO SECTION (all domains, top priority) ────────────────────────────────
-  if (otos.length) {
-    const dc      = otos.filter(t => isDone(t.id, dk)).length;
-    const allDone = dc === otos.length;
+  // ── OTO SECTION (all domains, top priority; overdue OTOs first) ───────────
+  const allOtos = [...overdueOtos, ...otos];
+  if (allOtos.length) {
+    const dc = allOtos.filter(t => isDone(t.id, dk)).length;
     html += '<div class="section-header" style="margin-top:0">'
       + '<div class="section-pip" style="background:#facc15"></div>'
       + '<div class="section-label" style="color:#a16207">ONE TIME</div>'
-      + '<div class="section-count">' + dc + '/' + otos.length + '</div>'
+      + '<div class="section-count">' + dc + '/' + allOtos.length + '</div>'
       + '</div>';
-    otos.forEach(t => { html += taskRowHTML(t, dk, true); });
+    overdueOtos.forEach(t => { html += taskRowHTML(t, dk, true, true); });
+    otos.forEach(t => { html += taskRowHTML(t, dk, true, false); });
   }
 
-  // ── RECURRING BY SECTION ───────────────────────────────────────────────────
+  // ── RECURRING BY SECTION (overdue tasks first within each section) ─────────
   const bySection = {};
-  SECTIONS.forEach(s => { bySection[s.key] = []; });
-  recurring.forEach(t => { (bySection[t.section] || bySection['home']).push(t); });
+  SECTIONS.forEach(s => { bySection[s.key] = { reg: [], od: [] }; });
+  recurring.forEach(t => { (bySection[t.section] || bySection['home']).reg.push(t); });
+  overdueRec.forEach(t => { (bySection[t.section] || bySection['home']).od.push(t); });
   SECTIONS.forEach(sec => {
-    const st = bySection[sec.key];
+    const { reg, od } = bySection[sec.key];
+    const st = [...od, ...reg];
     if (!st.length) return;
     const dc = st.filter(t => isDone(t.id, dk)).length;
     html += '<div class="section-header">'
@@ -1154,7 +1194,8 @@ function renderToday() {
       + '<div class="section-label">' + sec.emoji + ' ' + sec.label.toUpperCase() + '</div>'
       + '<div class="section-count">' + dc + '/' + st.length + '</div>'
       + '</div>';
-    st.forEach(t => { html += taskRowHTML(t, dk); });
+    od.forEach(t => { html += taskRowHTML(t, dk, false, true); });
+    reg.forEach(t => { html += taskRowHTML(t, dk, false, false); });
   });
 
   // ── GET AHEAD SECTION (collapsed, blue) ────────────────────────────────────
@@ -1198,7 +1239,7 @@ function renderGetAheadSection(gaList, dk) {
     + '</div>';
 }
 function toggleGetAhead(hdr) { hdr.closest('.get-ahead-section').classList.toggle('open'); }
-function taskRowHTML(task, dk, showSection) {
+function taskRowHTML(task, dk, showSection, isOverdue) {
   const done  = isDone(task.id, dk);
   const stamp = doneLog[doneKey(task.id, dk)];
   const isOto = task.type === 'once';
@@ -1211,13 +1252,17 @@ function taskRowHTML(task, dk, showSection) {
     ? '<div style="font-size:8px;font-weight:700;letter-spacing:1px;color:' + sec.color
       + ';opacity:.6;flex-shrink:0;margin-left:4px">' + sec.emoji + '</div>'
     : '';
+  const overduePill = (isOverdue && !done)
+    ? '<span class="overdue-push-pill">OVERDUE</span>'
+    : '';
   const inner = '<div class="task-checkbox">' + (done ? CHECK_SVG : '') + '</div>'
     + '<div class="task-emoji">' + esc(task.emoji) + '</div>'
     + '<div style="flex:1">'
     +   '<div class="task-name">' + esc(task.name) + '</div>'
     +   '<div class="task-freq' + (stamp ? ' stamped' : '') + '">' + ftxt + '</div>'
     + '</div>'
-    + secChip;
+    + secChip
+    + overduePill;
   if (task.notes) {
     return '<div class="task-wrap">'
       + '<div class="' + cls + '" onclick="toggleDone(\'' + escId(task.id) + '\')">'
@@ -1318,15 +1363,24 @@ function getTaskRollingStatus(task) {
   if (doneLog[doneKey(task.id, lastDk)]) return 'done';
   if (serverLogEntries.some(e => e.taskId === task.id && e.dateKey === lastDk)) return 'done';
   if (lastDk === todayDk) return 'pending';
+  // Late completion: task was completed on a pushed-forward day after the missed due date
+  const hasLate = Object.keys(doneLog).some(k => {
+    const sep = k.lastIndexOf('__');
+    return k.slice(0, sep) === task.id && k.slice(sep + 2) > lastDk && k.slice(sep + 2) <= todayDk;
+  }) || serverLogEntries.some(e => e.taskId === task.id && e.dateKey > lastDk && e.dateKey <= todayDk);
+  if (hasLate) return 'done';
   return 'missed';
 }
 
-function getIndicatorStatus(indicatorTasks) {
+function getIndicatorStatus(indicatorTasks, dk) {
   if (!indicatorTasks.length) return 'gray';
-  const ss = indicatorTasks.map(t => getTaskRollingStatus(t));
-  if (ss.every(s => s === 'done'))   return 'green';
-  if (ss.some(s  => s === 'missed')) return 'red';
-  return 'amber'; // mix of done+pending, or all pending
+  if (indicatorTasks.some(t => getTaskRollingStatus(t) === 'missed')) return 'red';
+  const hasAmber = indicatorTasks.some(t => {
+    if (getTaskRollingStatus(t) === 'done') return false;
+    return isDueOn(t, dk) || isGetAheadEligible(t, dk);
+  });
+  if (hasAmber) return 'amber';
+  return 'green';
 }
 
 // ── DOMAIN HELPERS ────────────────────────────────────────────────────────────
@@ -1380,13 +1434,13 @@ function renderDomains() {
     });
     const indicators = Object.entries(indMap);
     const total      = indicators.length;
-    const satisfied  = indicators.filter(([, tt]) => getIndicatorStatus(tt) === 'green').length;
+    const satisfied  = indicators.filter(([, tt]) => getIndicatorStatus(tt, dk) === 'green').length;
     const pct        = total ? Math.round(satisfied / total * 100) : null;
     const domainCol  = pct === 100 ? '#4ade80' : pct !== null ? '#facc15' : '#444';
 
     // Header dots
     const dots = indicators.map(([, tt]) =>
-      '<div class="domain-dot ' + getIndicatorStatus(tt) + '"></div>'
+      '<div class="domain-dot ' + getIndicatorStatus(tt, dk) + '"></div>'
     ).join('');
 
     // Next due action label for the domain tile
@@ -1406,19 +1460,22 @@ function renderDomains() {
       detail = '<div class="domains-empty">No tasks in this domain yet.</div>';
     } else {
       indicators.forEach(([indName, indTasks]) => {
-        const status  = getIndicatorStatus(indTasks);
+        const status  = getIndicatorStatus(indTasks, dk);
 
-        // Next due action for this indicator row
+        // IN TODAY pill — any task due today or get-ahead eligible
+        const hasInToday = indTasks.some(t => isDueOn(t, dk) || isGetAheadEligible(t, dk));
+        const inTodayPill = hasInToday
+          ? '<span class="tpt-pill today" style="font-size:7px;padding:2px 6px;margin-right:4px">IN TODAY</span>'
+          : '';
+
+        // Next due date with year
         const nextI = getNextDueAction(indTasks, dk);
-        let indNextHTML = '';
+        let nextDueHTML = '';
         if (nextI) {
-          const isTodayI = nextI.dateKey === dk && isDueToday(nextI.task, dk);
-          const isGAI    = isGetAheadOn(nextI.task, dk);
-          const [,im,id2] = nextI.dateKey.split('-').map(Number);
-          if (isTodayI)   indNextHTML = '<span class="tpt-pill today" style="font-size:7px;padding:2px 6px;margin-right:4px">IN TODAY</span>';
-          else if (isGAI) indNextHTML = '<span class="ind-next-action">GET AHEAD &middot; ' + MONS[im-1] + ' ' + id2 + '</span>';
-          else            indNextHTML = '<span class="ind-next-action">Next &middot; ' + MONS[im-1] + ' ' + id2 + '</span>';
+          const [iy, im, id2] = nextI.dateKey.split('-').map(Number);
+          nextDueHTML = '<span class="ind-next-action">Next due ' + MONS[im-1] + ' ' + id2 + ', ' + iy + '</span>';
         }
+        const indNextHTML = inTodayPill + nextDueHTML;
 
         // Task preview tiles
         let tptHTML = '';
@@ -1447,15 +1504,16 @@ function renderDomains() {
           }
 
           // Meta line
-          const metaParts = [getFreqLabel(t)];
+          const metaParts = [getTypicalDueLabel(t)];
           const ndk3 = !inToday ? getNextDueDateKey(t, dk) : null;
           if (ndk3) { const [,nm2,nd2] = ndk3.split('-').map(Number); metaParts.push('Due ' + MONS[nm2-1] + ' ' + nd2); }
           const lastC = getLastCompleted(t.id);
           if (lastC) { const [,lm,ld] = lastC.dk.split('-').map(Number); metaParts.push('Last: ' + MONS[lm-1] + ' ' + ld); }
+          if (t.completionType === 'data' && lastC && lastC.dataValue) metaParts.push('Value: ' + lastC.dataValue);
 
-          // PROACTIVE / CLEAR buttons — only show if task.proactive and not due today already
+          // PROACTIVE / CLEAR buttons — show for all tasks not due today
           let actHTML = '';
-          if (t.proactive && !inToday) {
+          if (!inToday) {
             if (isProDone) {
               actHTML = '<button class="tpt-btn proactive" disabled>PROACTIVE</button>'
                 + '<button class="tpt-btn clear-pro" onclick="clearProactive(event,\'' + escId(t.id) + '\')">CLEAR</button>';
@@ -1940,6 +1998,28 @@ function hideSplash() {
   setTimeout(() => { s.style.display = 'none'; }, 700);
 }
 
+// ── SECTIONS — dynamic load from sheet ────────────────────────────────────────
+async function loadSections() {
+  if (!API_URL) return;
+  try {
+    const res  = await fetch(API_URL + '?action=getSections');
+    const data = await res.json();
+    if (data.ok && Array.isArray(data.sections) && data.sections.length) {
+      SECTIONS = data.sections;
+    }
+  } catch {}
+  populateSectionDropdown();
+}
+function populateSectionDropdown() {
+  const sel = document.getElementById('m-section');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = SECTIONS.map(s =>
+    '<option value="' + s.key + '">' + esc(s.label) + '</option>'
+  ).join('');
+  if (SECTIONS.some(s => s.key === cur)) sel.value = cur;
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 async function init() {
   lastDateKey = todayKey();
@@ -1948,7 +2028,7 @@ async function init() {
   setInterval(checkMidnight,     60000);
   setInterval(syncFromSheet,     SYNC_MS);
   setInterval(hydrateTodayState, 2 * 60 * 1000); // multi-device sync every 2 min
-  await syncFromSheet();
+  await Promise.all([loadSections(), syncFromSheet()]);
   await hydrateTodayState();
   loadServerHistory(90); // non-blocking background load
   loadWeather();         // non-blocking
