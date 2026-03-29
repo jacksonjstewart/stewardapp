@@ -766,7 +766,7 @@ function normalizeTask(raw) {
     freq:      (raw.frequency   || raw.freq || 'once').toLowerCase(),
     type:      (raw.type        || 'recurring').toLowerCase(),
     dow:        dowRaw,
-    dotm:       raw.dotm        ? parseInt(raw.dotm)       : null,
+    dotm:       (raw.dotm !== '' && raw.dotm !== null && raw.dotm !== undefined) ? parseInt(raw.dotm) : null,
     dotwOrd:    raw.dotw_ord    ? parseInt(raw.dotw_ord)   : null,
     yearMonth:  raw.yearmonth   ? parseInt(raw.yearmonth)  : null,
     anchorDate:     raw.anchordate      || '',
