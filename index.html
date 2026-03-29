@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Steward &middot; v1.1</title>
+  <title>Steward &middot; v1.0</title>
   <meta charset="UTF-8"/>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
@@ -18,15 +18,17 @@
     html,body{background:#0a0a0a;height:100%;font-family:"Outfit",sans-serif;color:#e8e8e8}
     body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:999;opacity:0.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");background-repeat:repeat;background-size:128px 128px}
     ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:#1e1e1e;border-radius:99px}
+    @keyframes splashFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes splashSubIn{from{opacity:0;letter-spacing:8px}to{opacity:1;letter-spacing:4px}}
     #splash{position:fixed;inset:0;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100}
-    #splash-wordmark{display:inline-flex;flex-direction:column;align-items:flex-start}
+    #splash-wordmark{display:inline-flex;flex-direction:column;align-items:flex-start;animation:splashFadeIn .9s cubic-bezier(.4,0,.2,1) both}
     #splash-the{font-family:"Cormorant Garamond",serif;font-size:13px;font-weight:300;font-style:italic;color:#fff;letter-spacing:1.5px;line-height:1;padding-left:2px;opacity:.75}
     #splash-name{font-family:"Cormorant Garamond",serif;font-size:80px;font-weight:300;color:#fff;letter-spacing:-2px;line-height:.92}
     #splash-family-wrap{align-self:flex-end;display:flex;align-items:baseline;gap:3px}
     #splash-family{font-family:"Cormorant Garamond",serif;font-size:26px;font-weight:300;color:#fff;letter-spacing:1px;opacity:.85}
     #splash-copy{font-family:"Cormorant Garamond",serif;font-size:12px;font-weight:300;color:#fff;opacity:.4}
     #splash-rule{width:100%;height:1px;background:linear-gradient(90deg,transparent,#2a2a2a,transparent);margin:14px 0}
-    #splash-sub{font-family:"Outfit",sans-serif;font-size:9px;font-weight:700;letter-spacing:4px;color:#2a2a2a;align-self:center}
+    #splash-sub{font-family:"Outfit",sans-serif;font-size:9px;font-weight:700;letter-spacing:4px;color:#2a2a2a;align-self:center;animation:splashSubIn 1.2s cubic-bezier(.4,0,.2,1) .4s both}
     #offline-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:#1a0a0a;border-bottom:1px solid rgba(239,68,68,.3);padding:8px 20px;text-align:center;font-size:10px;font-weight:500;letter-spacing:2px;color:#ef4444}
     #offline-banner.visible{display:block}
     #device-sync-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:201;background:rgba(10,10,10,.92);border-bottom:1px solid rgba(56,189,248,.18);padding:6px 20px;text-align:center;font-size:8px;font-weight:700;letter-spacing:2.5px;color:#38bdf8;pointer-events:none}
@@ -73,7 +75,7 @@
     .type-header::after{content:"";flex:1;height:1px;background:#161616}
     .type-header.once-header{color:#6a5010}.type-header.once-header::after{background:#2a2008}
     .type-header.once-header.once-all-done{color:#4ade80}.type-header.once-header.once-all-done::after{background:#1a3a1a}
-    .get-ahead-section{margin-top:24px}
+    .get-ahead-section{margin-top:24px;border-top:1px solid #161616;padding-top:20px}
     .get-ahead-header{display:flex;align-items:center;gap:8px;cursor:pointer;padding-bottom:10px;user-select:none;-webkit-tap-highlight-color:transparent}
     .get-ahead-pip{width:2.5px;height:14px;border-radius:99px;background:#7dd3fc;opacity:.7;flex-shrink:0}
     .get-ahead-label{font-size:10px;font-weight:700;color:#38bdf8;letter-spacing:3px;flex:1}
@@ -140,7 +142,7 @@
     #left-footer{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:24px;border-top:1px solid #0f0f0f}
     #version-tag{font-size:9px;color:#1a1a1a;letter-spacing:2px}
     #checkin-indicator{font-size:10px;color:#444;letter-spacing:.2px;min-height:14px}
-    #checkin-indicator button{background:none;border:none;cursor:pointer;font-family:"Outfit",sans-serif;font-size:10px;padding:0;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:2px}
+    #checkin-indicator button{background:none;border:none;cursor:pointer;font-family:"Outfit",sans-serif;font-size:10px;padding:0;text-decoration:none}
     #loading-state{font-size:13px;color:#2a2a2a;padding:20px 0;letter-spacing:1px}
     #empty-state{display:none;padding:28px 0 8px;text-align:center}
     .week-strip{display:flex;gap:6px;margin-bottom:24px;border-bottom:1px solid #1a1a1a;padding-bottom:16px}
@@ -269,7 +271,7 @@
     .tpt-btn.proactive:disabled{border-color:#111;color:#222;cursor:default}
     .tpt-btn.clear-pro{border-color:#3a1a1a;color:#f87171}.tpt-btn.clear-pro:hover{border-color:#f87171;background:rgba(248,113,113,.06)}
     /* ── Domain tile next-action label ───────────────────────────────────── */
-    .domain-next-action{font-size:9px;color:#2a2a2a;letter-spacing:.3px;flex:1;text-align:right;padding-right:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+    .domain-next-action{font-size:9px;color:#555;letter-spacing:.3px;flex:1;text-align:right;padding-right:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
     .ind-next-action{font-size:9px;color:#2a2a2a;letter-spacing:.3px;white-space:nowrap;flex-shrink:0;padding-left:6px}
     /* ── Mobile layout (≤768 px) ──────────────────────────────────────────── */
     @media(max-width:768px){
