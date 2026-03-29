@@ -828,6 +828,7 @@ function isDueOn(task, dk) {
       return dow === tdow && diff % 14 === 0;
     }
     case 'monthly':
+      if (task.dotm === 0) { const last = new Date(y, m, 0).getDate(); return d === last; } // last day of month
       if (task.dotm)                       return d === task.dotm;
       if (task.dotwOrd && task.dow.length) return dow === task.dow[0] && Math.ceil(d/7) === task.dotwOrd;
       return false;
@@ -887,7 +888,7 @@ function getFreqLabel(task) {
     case 'daily':    return 'Daily';
     case 'weekly':   return task.dow.length ? 'Weekly \u00b7 ' + task.dow.map(d => DAYS[d]).join(', ') : 'Weekly';
     case 'biweekly': return 'Every other week';
-    case 'monthly':  return task.dotm ? 'Monthly \u00b7 ' + task.dotm + 'th' : 'Monthly';
+    case 'monthly':  return task.dotm === 0 ? 'Monthly \u00b7 last day' : task.dotm ? 'Monthly \u00b7 ' + task.dotm + 'th' : 'Monthly';
     case 'yearly':   return task.yearMonth ? 'Yearly \u00b7 ' + MONS[task.yearMonth-1] : 'Yearly';
     case 'nmonthly': {
       const n = task.freqMonths || 1;
@@ -926,6 +927,7 @@ function getTypicalDueLabel(task) {
       return days ? days + ' \u00b7 Biweekly' : 'Every other week';
     }
     case 'monthly': {
+      if (task.dotm === 0)                     return 'Last day of each month';
       if (task.dotm)                           return ord(task.dotm) + ' of each month';
       if (task.dotwOrd && task.dow && task.dow.length)
         return ord(task.dotwOrd) + ' ' + DAYS[task.dow[0]] + ' monthly';
