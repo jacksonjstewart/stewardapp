@@ -29,6 +29,9 @@
     #splash-sub{font-family:"Outfit",sans-serif;font-size:9px;font-weight:700;letter-spacing:4px;color:#2a2a2a;align-self:center}
     #offline-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:200;background:#1a0a0a;border-bottom:1px solid rgba(239,68,68,.3);padding:8px 20px;text-align:center;font-size:10px;font-weight:500;letter-spacing:2px;color:#ef4444}
     #offline-banner.visible{display:block}
+    #device-sync-banner{display:none;position:fixed;top:0;left:0;right:0;z-index:201;background:rgba(10,10,10,.92);border-bottom:1px solid rgba(56,189,248,.18);padding:6px 20px;text-align:center;font-size:8px;font-weight:700;letter-spacing:2.5px;color:#38bdf8;pointer-events:none}
+    #device-sync-banner.visible{display:block}
+    #task-list.syncing{pointer-events:none;opacity:.5;transition:opacity .2s}
     #top-bar{position:fixed;top:0;left:0;right:0;height:2px;z-index:50;background:transparent}
     #top-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#4ade80,#a3e635);transition:width 1s cubic-bezier(.4,0,.2,1);border-radius:0 2px 2px 0}
     #app{min-height:100vh;display:grid;grid-template-columns:3fr 1fr}
@@ -550,6 +553,7 @@
 </div>
 
 <div id="offline-banner">NO CONNECTION &mdash; changes saved locally</div>
+<div id="device-sync-banner">SYNCING FROM OTHER DEVICES&hellip;</div>
 <div id="top-bar"><div id="top-bar-fill"></div></div>
 
 <div id="app">
@@ -1306,26 +1310,62 @@ async function syncFromSheet() {
     renderCurrentView();
   }
 }
+function setDeviceSyncState(active) {
+  const tl = document.getElementById('task-list');
+  const bn = document.getElementById('device-sync-banner');
+  if (tl) tl.classList.toggle('syncing', active);
+  if (bn) bn.classList.toggle('visible', active);
+}
 async function hydrateTodayState() {
   if (!API_URL) return;
+  // Skip if a local change is pending commit — avoid overwriting uncommitted state
+  if (softTimer) return;
+  setDeviceSyncState(true);
   try {
     const res  = await fetch(API_URL + '?action=getTodayState&dateKey=' + todayKey());
     const data = await res.json();
-    if (!data.entries) return;
+    if (!data.entries) { setDeviceSyncState(false); return; }
     const dk = todayKey();
+
+    // Snapshot which OTO tasks were completed locally today (before we replace)
+    const prevTodayOtos = new Set(
+      tasks.filter(t => t.type === 'once' && doneLog[doneKey(t.id, dk)]).map(t => t.id)
+    );
+
+    // Full-replace today's doneLog slice with authoritative server state.
+    // This handles un-checks from other devices (additive merge would leave ghost entries).
+    const nextLog = {};
+    Object.entries(doneLog).forEach(([k, v]) => {
+      if (k.slice(k.lastIndexOf('__') + 2) !== dk) nextLog[k] = v; // keep non-today entries
+    });
+    const serverIds = new Set();
     data.entries.forEach(e => {
-      if (!e.taskId || !e.completedAt) return; // guard against malformed server rows
-      const k = doneKey(e.taskId, dk);
-      if (!doneLog[k]) doneLog[k] = { ts: e.completedAt, who: e.who || '' };
-      // Restore OTO done state from server using new cycle-marker format
+      if (!e.taskId || !e.completedAt) return;
+      nextLog[doneKey(e.taskId, dk)] = { ts: e.completedAt, who: e.who || '', dataValue: e.dataValue || '' };
+      serverIds.add(e.taskId);
       const t = tasks.find(x => x.id === e.taskId);
+      // Restore OTO cycle marker
       if (t?.type === 'once' && !otoDone[e.taskId]) {
         otoDone[e.taskId] = t.targetDate || 'permanent';
       }
+      // Restore proactiveDone for GET-AHEAD completions (task not scheduled for today)
+      if (t && !isDueOn(t, dk) && !proactiveDone[t.id]) {
+        const nextDk = getNextDueDateKey(t, dk) || t.targetDate || dk;
+        proactiveDone[t.id] = { doneOn: dk, suppressUntil: nextDk };
+      }
     });
-    saveDoneLog(); saveOtoDone();
-    renderCurrentView();
+    // Remove OTO markers un-done on another device today
+    prevTodayOtos.forEach(id => { if (!serverIds.has(id)) delete otoDone[id]; });
+    // Remove proactiveDone entries cleared on another device today
+    Object.keys(proactiveDone).forEach(id => {
+      if (proactiveDone[id].doneOn === dk && !serverIds.has(id)) delete proactiveDone[id];
+    });
+
+    doneLog = nextLog;
+    saveDoneLog(); saveOtoDone(); saveProactiveDone();
+    renderCurrentView(); updateRing(); updateTopBar();
   } catch {}
+  setDeviceSyncState(false);
 }
 async function loadServerHistory(days) {
   if (!API_URL) return;
