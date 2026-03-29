@@ -86,7 +86,7 @@
     .task-row.get-ahead.done .task-name{color:#252525;text-decoration:line-through;text-decoration-color:#333}
     .task-row.get-ahead.done .task-checkbox{border-color:#4ade80;background:#4ade80}
     .get-ahead-pill{background:rgba(125,211,252,.12);border:1px solid rgba(125,211,252,.25);color:#38bdf8;font-size:8px;font-weight:700;letter-spacing:1.5px;padding:3px 8px;border-radius:99px;flex-shrink:0;white-space:nowrap}
-    .overdue-push-pill{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#f59e0b;font-size:8px;font-weight:700;letter-spacing:1.5px;padding:3px 8px;border-radius:99px;flex-shrink:0;white-space:nowrap}
+    .overdue-push-pill{background:transparent;border:none;color:#3a3a3a;font-size:9px;font-weight:400;letter-spacing:.5px;padding:0 2px;flex-shrink:0;white-space:nowrap}
     .seasonal-pill{background:rgba(125,211,252,.07);border:1px solid rgba(125,211,252,.2);color:#7dd3fc;font-size:8px;font-weight:700;letter-spacing:1.5px;padding:3px 8px;border-radius:99px;flex-shrink:0;white-space:nowrap}
     .task-row{display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:11px;cursor:pointer;margin-bottom:5px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.055);transition:background .15s,border-color .15s,transform .1s;user-select:none;-webkit-tap-highlight-color:transparent}
     .task-row:hover{background:rgba(255,255,255,.035);border-color:rgba(255,255,255,.08)}
@@ -667,8 +667,9 @@
 // ── CONFIG ────────────────────────────────────────────────────────────────────
 const CSV_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSStX24zLoqGqB_8YYURQbdQsTwEzdwWb6Cduc2McST8ODF3zDSwVH6fHuUaaBAS-U2OizAybtReL12/pub?gid=0&single=true&output=csv';
 const API_URL  = 'https://script.google.com/macros/s/AKfycbxxbAYzXNlJDxJYFiqBHg5XJvsJn8odS1g5VQPG0Ekkp7No9Y6scysk3whX-QwLBcNJ/exec';
-const SYNC_MS  = 5 * 60 * 1000;
-const TZ       = 'America/Edmonton';
+const SYNC_MS     = 5 * 60 * 1000;
+const TZ          = 'America/Edmonton';
+const LAUNCH_DATE = '2026-03-30'; // Tasks not completed before this date are not penalised
 // Sections are loaded from the sheet at startup (loadSections).
 // This fallback keeps the app functional while offline or before the first load.
 let SECTIONS = [
@@ -1642,6 +1643,7 @@ function getTaskRollingStatus(task) {
   const today   = edmontonNow();
   const todayDk = getDateKey(today);
   if (!isInSeason(task, todayDk)) return 'gray'; // outside seasonal window
+  if (todayDk < LAUNCH_DATE) return 'gray'; // pre-launch: no penalties
   // Proactive completion covers the upcoming cycle — treat as done until suppressUntil passes
   if (proactiveDone[task.id]) {
     const p = proactiveDone[task.id];
@@ -1668,6 +1670,7 @@ function getTaskRollingStatus(task) {
 // Tasks with no grace (overdueGraceDays = 0) go RED immediately on miss.
 function isHardOverdue(task, dk) {
   if (!isInSeason(task, dk)) return false;
+  if (dk < LAUNCH_DATE) return false; // pre-launch: no hard overdue
   // Proactively completed and still within suppress window → not hard overdue
   const pd = proactiveDone[task.id];
   if (pd && pd.suppressUntil >= dk) return false;
