@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Steward &middot; v1.0</title>
+  <title>Steward &middot; v1.1</title>
   <meta charset="UTF-8"/>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
@@ -81,6 +81,10 @@
     .task-row.get-ahead{border-color:rgba(125,211,252,.12);background:rgba(125,211,252,.03)}
     .task-row.get-ahead:hover{border-color:rgba(125,211,252,.22);background:rgba(125,211,252,.07)}
     .task-row.get-ahead .task-name{color:#7dd3fc}.task-row.get-ahead .task-freq{color:#164e63}
+    .task-row.get-ahead.done{background:rgba(74,222,128,.04);border-color:rgba(74,222,128,.12)}
+    .task-row.get-ahead.done:hover{background:rgba(74,222,128,.04);border-color:rgba(74,222,128,.12)}
+    .task-row.get-ahead.done .task-name{color:#252525;text-decoration:line-through;text-decoration-color:#333}
+    .task-row.get-ahead.done .task-checkbox{border-color:#4ade80;background:#4ade80}
     .get-ahead-pill{background:rgba(125,211,252,.12);border:1px solid rgba(125,211,252,.25);color:#38bdf8;font-size:8px;font-weight:700;letter-spacing:1.5px;padding:3px 8px;border-radius:99px;flex-shrink:0;white-space:nowrap}
     .overdue-push-pill{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:#f59e0b;font-size:8px;font-weight:700;letter-spacing:1.5px;padding:3px 8px;border-radius:99px;flex-shrink:0;white-space:nowrap}
     .seasonal-pill{background:rgba(125,211,252,.07);border:1px solid rgba(125,211,252,.2);color:#7dd3fc;font-size:8px;font-weight:700;letter-spacing:1.5px;padding:3px 8px;border-radius:99px;flex-shrink:0;white-space:nowrap}
@@ -264,6 +268,61 @@
     /* ── Domain tile next-action label ───────────────────────────────────── */
     .domain-next-action{font-size:9px;color:#2a2a2a;letter-spacing:.3px;flex:1;text-align:right;padding-right:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
     .ind-next-action{font-size:9px;color:#2a2a2a;letter-spacing:.3px;white-space:nowrap;flex-shrink:0;padding-left:6px}
+    /* ── Mobile layout (≤768 px) ──────────────────────────────────────────── */
+    @media(max-width:768px){
+      /* Single-column stack: left panel on top, right analytics below */
+      #app{grid-template-columns:1fr;min-height:auto}
+      /* Left panel — tighter padding, no right border */
+      #left{padding:20px 18px 28px;border-right:none;min-height:auto}
+      #left>div:first-child{margin-bottom:20px!important}
+      /* Clock / header */
+      #clock-day{font-size:44px;letter-spacing:-1.5px}
+      #clock-date{font-size:16px}
+      #clock-time{font-size:13px}
+      #clock-row2{margin-top:5px;gap:10px}
+      #weather-widget{gap:5px}
+      /* ADD TASK / PROGRESS buttons — more compact */
+      #edit-btn,#wr-peek-btn{font-size:8px;padding:8px 11px;letter-spacing:1.5px}
+      /* Nav bar — allow wrapping on small screens */
+      #nav{flex-wrap:wrap;margin-bottom:20px}
+      .nav-btn{font-size:9px;letter-spacing:2px;margin-right:14px;padding-bottom:9px}
+      /* Right analytics panel — normal flow, full-width, below left */
+      #right{position:static;height:auto;width:100%;padding:24px 18px 36px;border-top:1px solid #111;align-items:stretch}
+      /* Brand — horizontal row, centred */
+      #family-brand{display:flex;flex-direction:row;align-items:baseline;justify-content:center;gap:8px;width:100%;margin-bottom:4px}
+      #brand-the{font-size:11px}
+      #brand-stewart{font-size:38px;letter-spacing:-1px;line-height:1}
+      #brand-family-wrap{align-self:flex-end}
+      #brand-family{font-size:17px}
+      #brand-copy{font-size:10px}
+      #brand-rule{margin-top:10px}
+      /* Right-main — 2-col grid: ring on left, motivate+stats on right */
+      #right-main{
+        display:grid;
+        grid-template-columns:130px 1fr;
+        grid-template-areas:
+          "greeting greeting"
+          "ring     motivate"
+          "ring     stats"
+          "bars     bars"
+          "footer   footer";
+        column-gap:18px;
+        row-gap:0;
+        padding-top:14px;
+        align-items:start;
+        width:100%
+      }
+      #greeting-wrap{grid-area:greeting;text-align:left;margin-bottom:10px}
+      #ring-wrap{grid-area:ring;width:130px;height:130px;margin:0;align-self:center}
+      #motivate-wrap{grid-area:motivate;text-align:left;margin-bottom:10px;align-self:flex-end}
+      #motivate-msg{font-size:15px}
+      #motivate-sub{font-size:9px}
+      #stats{grid-area:stats;margin:0;align-self:flex-start}
+      .stat-val{font-size:26px}
+      .stat-lbl{font-size:7px}
+      #sec-bars{grid-area:bars;margin-top:18px}
+      #footer-note{grid-area:footer;margin-top:14px;padding-top:14px}
+    }
   </style>
 </head>
 <body>
@@ -639,6 +698,11 @@ let histTab          = 'log';
 let histDays         = 30;
 let lastDateKey      = '';
 let softTimer        = null;
+// ── OPEN/EXPANDED STATE (survives re-renders caused by auto-sync) ─────────────
+let gaOpen        = false;  // GET AHEAD section in Today view
+let _lastProactiveMs = 0;  // timestamp of last proactive complete/clear (debounce guard)
+let domainOpen    = {};     // { sectionKey: bool } — which domain cards are expanded
+let indicatorOpen = {};     // { 'sectionKey__indicatorName': bool } — indicator rows
 let dailyCommitDone  = false;
 let pendingTaskId    = null;  // taskId awaiting modal confirmation
 let pendingProactive = null;  // suppressUntil dateKey for in-progress proactive complete
@@ -999,6 +1063,8 @@ function toggleDone(taskId) {
     return;
   }
   // Check — dispatch by completionType
+  // Null pendingProactive so today-view completions are never misidentified as proactive
+  pendingProactive = null;
   switch (t?.completionType) {
     case 'checklist': openChecklistModal(t);  break;
     case 'data':      openDataModal(t);        break;
@@ -1079,6 +1145,8 @@ function confirmChecklist() {
   else     completeTask(tid, 'checklist_confirmed');
 }
 function closeChecklistModal() {
+  // Always clear pending state so a stale pendingProactive can't bleed into the next modal open
+  pendingTaskId = null; pendingProactive = null;
   document.getElementById('checklist-modal-overlay').style.display = 'none';
 }
 
@@ -1107,6 +1175,8 @@ function confirmData() {
   else     completeTask(tid, val);
 }
 function closeDataModal() {
+  // Always clear pending state so a stale pendingProactive can't bleed into the next modal open
+  pendingTaskId = null; pendingProactive = null;
   document.getElementById('data-modal-overlay').style.display = 'none';
 }
 
@@ -1151,6 +1221,9 @@ function finishProactiveComplete(taskId, suppressUntil, dataValue) {
     const writeTaskId = t.dataTargetTask || taskId;
     updateTaskField(writeTaskId, t.dataTarget, dataValue);
   }
+  // Keep GET AHEAD section open and lock out phantom header-tap for 400 ms
+  gaOpen = true;
+  _lastProactiveMs = Date.now();
   renderCurrentView(); updateRing(); updateTopBar();
   scheduleSoftCommit();
 }
@@ -1161,6 +1234,12 @@ function clearProactive(e, taskId) {
   const dk = todayKey();
   delete doneLog[doneKey(taskId, dk)];
   saveDoneLog();
+  // For OTO tasks: also clear the cycle marker so the task can reappear
+  const t = tasks.find(x => x.id === taskId);
+  if (t?.type === 'once') { delete otoDone[taskId]; saveOtoDone(); }
+  // Keep GET AHEAD section open and lock out phantom header-tap for 400 ms
+  gaOpen = true;
+  _lastProactiveMs = Date.now();
   renderCurrentView(); updateRing(); updateTopBar();
   scheduleSoftCommit();
 }
@@ -1221,8 +1300,9 @@ async function hydrateTodayState() {
     if (!data.entries) return;
     const dk = todayKey();
     data.entries.forEach(e => {
+      if (!e.taskId || !e.completedAt) return; // guard against malformed server rows
       const k = doneKey(e.taskId, dk);
-      if (!doneLog[k]) doneLog[k] = { ts: e.completedAt, who: e.who };
+      if (!doneLog[k]) doneLog[k] = { ts: e.completedAt, who: e.who || '' };
       // Restore OTO done state from server using new cycle-marker format
       const t = tasks.find(x => x.id === e.taskId);
       if (t?.type === 'once' && !otoDone[e.taskId]) {
@@ -1256,6 +1336,31 @@ function fmtTime(iso) {
   try { return new Date(iso).toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', timeZone: TZ }); }
   catch { return ''; }
 }
+// Full human stamp: "Completed at 10:28 PM on March 28th, 2026 by Jackson"
+// prefix = 'Last' → "Last completed at …"
+function fmtStampFull(ts, who, prefix) {
+  try {
+    const MNAMES = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: TZ, year: 'numeric', month: 'numeric', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', hour12: true
+    }).formatToParts(new Date(ts));
+    const get  = type => (parts.find(p => p.type === type) || {}).value || '';
+    const mon  = MNAMES[parseInt(get('month'), 10) - 1];
+    const day  = parseInt(get('day'), 10);
+    const yr   = get('year');
+    const hr   = get('hour');
+    const min  = get('minute');
+    const per  = (get('dayPeriod') || '').toUpperCase() || get('ampm');
+    const ord  = (day % 10 === 1 && day !== 11) ? 'st'
+               : (day % 10 === 2 && day !== 12) ? 'nd'
+               : (day % 10 === 3 && day !== 13) ? 'rd' : 'th';
+    const time = hr + ':' + min + ' ' + per;
+    const pre  = prefix ? prefix + ' completed at ' : 'Completed at ';
+    return pre + time + ' on ' + mon + ' ' + day + ord + ', ' + yr + ' by ' + (who || 'Unknown');
+  } catch { return '\u2713 completed'; }
+}
 
 // ── RENDER: TODAY ─────────────────────────────────────────────────────────────
 function renderToday() {
@@ -1271,9 +1376,17 @@ function renderToday() {
   const recurring = allDue.filter(t => t.type !== 'once');
   const overdueOtos = overdue.filter(t => t.type === 'once');
   const overdueRec  = overdue.filter(t => t.type !== 'once');
-  const getAheads = tasks.filter(t => isGetAheadEligible(t, dk));
+  const getAheads     = tasks.filter(t => isGetAheadEligible(t, dk));
+  // Get-ahead tasks already completed today — stay visible (stamped green) until midnight commit.
+  // Use proactiveDone + getaheadDays directly; don't rely on isGetAheadOn forward-loop.
+  const getAheadsDone = tasks.filter(t => {
+    if ((t.getaheadDays || 0) <= 0) return false;   // must have get-ahead configured
+    if (isDueOn(t, dk)) return false;                // actually due today, not early
+    const pd = proactiveDone[t.id];
+    return pd && pd.suppressUntil >= dk;             // proactively completed and still covered
+  });
 
-  if (!allDue.length && !overdue.length && !getAheads.length) {
+  if (!allDue.length && !overdue.length && !getAheads.length && !getAheadsDone.length) {
     container.innerHTML = '';
     emptyEl.style.display = tasks.length ? 'block' : 'none';
     if (!tasks.length) container.innerHTML =
@@ -1316,14 +1429,37 @@ function renderToday() {
   });
 
   // ── GET AHEAD SECTION (collapsed, blue) ────────────────────────────────────
-  if (getAheads.length) html += renderGetAheadSection(getAheads, dk);
+  if (getAheads.length || getAheadsDone.length) html += renderGetAheadSection(getAheads, getAheadsDone, dk);
 
   container.innerHTML = html;
 }
 
-function renderGetAheadSection(gaList, dk) {
+function renderGetAheadSection(gaList, gaDone, dk) {
   const MONS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   let rows = '';
+
+  // ── Completed get-ahead tasks: stamped green + CLEAR, persist until midnight ─
+  (gaDone || []).forEach(t => {
+    const nextDk  = getNextDueDateKey(t, dk) || t.targetDate || '';
+    const daysOut = nextDk ? Math.round(daysBetween(dk, nextDk)) : 0;
+    let dueDateStr = '';
+    if (nextDk) { const [y,m,d] = nextDk.split('-').map(Number); dueDateStr = MONS[m-1] + ' ' + d + ', ' + y; }
+    const stamp  = doneLog[doneKey(t.id, dk)];
+    const ftxt   = stamp ? fmtStampFull(stamp.ts, stamp.who) : '\u2713 completed';
+    const pill   = daysOut > 0 ? '<span class="get-ahead-pill">' + daysOut + 'D</span>' : '';
+    rows += '<div class="task-row get-ahead done" style="cursor:default">'
+      + '<div class="task-checkbox">' + CHECK_SVG + '</div>'
+      + '<div class="task-emoji" style="opacity:.35">' + esc(t.emoji) + '</div>'
+      + '<div style="flex:1">'
+      +   '<div class="task-name">' + esc(t.name) + '</div>'
+      +   '<div class="task-freq stamped">' + ftxt + '</div>'
+      + '</div>'
+      + pill
+      + '<button class="tpt-btn clear-pro" style="margin-left:6px;font-size:7px" onclick="clearProactive(event,\'' + escId(t.id) + '\')">CLEAR</button>'
+      + '</div>';
+  });
+
+  // ── Pending get-ahead tasks ────────────────────────────────────────────────
   gaList.forEach(t => {
     const nextDk  = getNextDueDateKey(t, dk) || t.targetDate || '';
     const daysOut = nextDk ? Math.round(daysBetween(dk, nextDk)) : 0;
@@ -1345,24 +1481,35 @@ function renderGetAheadSection(gaList, dk) {
       + pill
       + '</div>';
   });
-  return '<div class="get-ahead-section">'
+
+  const doneCount = (gaDone || []).length;
+  const pendCount = gaList.length;
+  const countLabel = doneCount && pendCount ? doneCount + ' done \u00b7 ' + pendCount + ' available'
+                   : doneCount               ? doneCount + ' done'
+                   :                           pendCount + ' available';
+
+  return '<div class="get-ahead-section' + (gaOpen ? ' open' : '') + '">'
     + '<div class="get-ahead-header" onclick="toggleGetAhead(this)">'
     +   '<div class="get-ahead-pip"></div>'
     +   '<div class="get-ahead-label">GET AHEAD</div>'
-    +   '<div class="get-ahead-count">' + gaList.length + ' available</div>'
+    +   '<div class="get-ahead-count">' + countLabel + '</div>'
     +   '<div class="get-ahead-chevron">' + CHEV_SVG + '</div>'
     + '</div>'
     + '<div class="get-ahead-body">' + rows + '</div>'
     + '</div>';
 }
-function toggleGetAhead(hdr) { hdr.closest('.get-ahead-section').classList.toggle('open'); }
+function toggleGetAhead(hdr) {
+  // Ignore phantom taps that fire within 400 ms of a proactive complete/clear render
+  if (Date.now() - _lastProactiveMs < 400) return;
+  const sec = hdr.closest('.get-ahead-section');
+  sec.classList.toggle('open');
+  gaOpen = sec.classList.contains('open');
+}
 function taskRowHTML(task, dk, showSection, isOverdue) {
   const done  = isDone(task.id, dk);
   const stamp = doneLog[doneKey(task.id, dk)];
   const isOto = task.type === 'once';
-  const ftxt  = stamp
-    ? '\u2713 ' + stamp.who + ' \u00b7 ' + fmtTime(stamp.ts)
-    : getFreqLabel(task);
+  const ftxt  = stamp ? fmtStampFull(stamp.ts, stamp.who) : getFreqLabel(task);
   const sec   = showSection ? SECTIONS.find(s => s.key === task.section) : null;
   const cls   = 'task-row' + (done ? ' done' : '') + (isOto ? ' once' : '');
   const secChip = sec
@@ -1474,6 +1621,11 @@ function getTaskRollingStatus(task) {
   const today   = edmontonNow();
   const todayDk = getDateKey(today);
   if (!isInSeason(task, todayDk)) return 'gray'; // outside seasonal window
+  // Proactive completion covers the upcoming cycle — treat as done until suppressUntil passes
+  if (proactiveDone[task.id]) {
+    const p = proactiveDone[task.id];
+    if (p.suppressUntil >= todayDk) return 'done';
+  }
   const maxDays = { daily: 2, weekly: 14, biweekly: 28, monthly: 62, biannual: 200, yearly: 400 };
   const lookback = task.freq === 'nmonthly' ? (task.freqMonths || 1) * 32 : (maxDays[task.freq] || 30);
   // Walk backwards to find the most recent due date
@@ -1505,6 +1657,14 @@ function getTaskRollingStatus(task) {
 // Tasks with no grace (overdueGraceDays = 0) go RED immediately on miss.
 function isHardOverdue(task, dk) {
   if (!isInSeason(task, dk)) return false;
+  // Proactively completed and still within suppress window → not hard overdue
+  const pd = proactiveDone[task.id];
+  if (pd && pd.suppressUntil >= dk) return false;
+  // Next occurrence is within the get-ahead window → show AMBER, not RED
+  if ((task.getaheadDays || 0) > 0) {
+    const ndk = getNextDueDateKey(task, dk);
+    if (ndk && Math.round(daysBetween(dk, ndk)) <= task.getaheadDays) return false;
+  }
   if (getTaskRollingStatus(task) !== 'missed') return false;
   if (!task.overdueGraceDays) return true;
   const today   = edmontonNow();
@@ -1561,8 +1721,17 @@ function getLastCompleted(taskId) {
   return lastEntry ? { dk: lastDk, ...lastEntry } : null;
 }
 
-function toggleIndicator(e, el) { e.stopPropagation(); el.classList.toggle('open'); }
-function toggleDomainCard(el)   { el.classList.toggle('open'); }
+function toggleIndicator(e, el) {
+  e.stopPropagation();
+  el.classList.toggle('open');
+  const key = el.dataset.indkey;
+  if (key) indicatorOpen[key] = el.classList.contains('open');
+}
+function toggleDomainCard(el) {
+  el.classList.toggle('open');
+  const key = el.dataset.seckey;
+  if (key) domainOpen[key] = el.classList.contains('open');
+}
 
 // ── RENDER: DOMAINS ───────────────────────────────────────────────────────────
 function renderDomains() {
@@ -1658,7 +1827,7 @@ function renderDomains() {
           const ndk3 = !inToday ? getNextDueDateKey(t, dk) : null;
           if (ndk3) { const [,nm2,nd2] = ndk3.split('-').map(Number); metaParts.push('Due ' + MONS[nm2-1] + ' ' + nd2); }
           const lastC = getLastCompleted(t.id);
-          if (lastC) { const [,lm,ld] = lastC.dk.split('-').map(Number); metaParts.push('Last: ' + MONS[lm-1] + ' ' + ld); }
+          if (lastC) metaParts.push(fmtStampFull(lastC.ts, lastC.who, 'Last'));
           if (t.completionType === 'data' && lastC && lastC.dataValue) metaParts.push((t.dataLabel || 'Value') + ': ' + lastC.dataValue);
 
           // PROACTIVE / CLEAR buttons — show for all tasks not due today
@@ -1684,7 +1853,8 @@ function renderDomains() {
             + '</div>';
         });
 
-        detail += '<div class="ind-row ind-expandable" onclick="toggleIndicator(event,this)">'
+        const indKey = sec.key + '__' + indName;
+        detail += '<div class="ind-row ind-expandable' + (indicatorOpen[indKey] ? ' open' : '') + '" data-indkey="' + esc(indKey) + '" onclick="toggleIndicator(event,this)">'
           + '<div class="ind-dot ' + status + '"></div>'
           + '<div style="flex:1;min-width:0">'
           +   '<div style="display:flex;align-items:center;gap:6px">'
@@ -1699,7 +1869,7 @@ function renderDomains() {
       });
     }
 
-    html += '<div class="domain-card" onclick="toggleDomainCard(this)">'
+    html += '<div class="domain-card' + (domainOpen[sec.key] ? ' open' : '') + '" data-seckey="' + esc(sec.key) + '" onclick="toggleDomainCard(this)">'
       + '<div class="domain-card-header">'
       +   '<div class="domain-card-icon">' + sec.emoji + '</div>'
       +   '<div class="domain-card-title" style="color:' + sec.color + '">' + sec.label.toUpperCase() + '</div>'
@@ -1763,7 +1933,7 @@ function renderHistoryLog() {
         + '<div class="task-emoji">' + esc(t?.emoji || '\u2705') + '</div>'
         + '<div style="flex:1">'
         +   '<div class="task-name">' + esc(t?.name || e.taskId) + '</div>'
-        +   '<div class="task-freq stamped">\u2713 ' + esc(e.who) + ' \u00b7 ' + fmtTime(e.ts) + '</div>'
+        +   '<div class="task-freq stamped">' + esc(fmtStampFull(e.ts, e.who)) + '</div>'
         + '</div>'
         + (sec ? '<div style="font-size:9px;color:' + sec.color + ';opacity:.5;letter-spacing:1px">' + sec.label.toUpperCase() + '</div>' : '')
         + '</div>';
