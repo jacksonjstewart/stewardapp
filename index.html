@@ -1893,20 +1893,27 @@ function renderHistory() {
 function renderHistoryLog() {
   const container = document.getElementById('history-content');
   const cut = new Date(); cut.setDate(cut.getDate() - histDays);
-  const cs  = getDateKey(cut);
+  const cs      = getDateKey(cut);
+  const todayDk = todayKey();
   const MONS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  // Guard: only accept well-formed YYYY-MM-DD dateKeys
+  const validDk = dk => typeof dk === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dk);
+
   // Build merged map: dateKey → { doneKey: { taskId, ts, who } }
-  // Server entries take precedence; local fills any gaps
+  // TODAY is intentionally excluded from serverLogEntries: doneLog is the sole
+  // source of truth until midnight commit — server entries may reflect a
+  // previous commit that was later reversed by an uncheck.
   const byDate = {};
   serverLogEntries
-    .filter(e => e.dateKey >= cs)
+    .filter(e => validDk(e.dateKey) && e.dateKey >= cs && e.dateKey < todayDk)
     .forEach(e => {
       if (!byDate[e.dateKey]) byDate[e.dateKey] = {};
       byDate[e.dateKey][doneKey(e.taskId, e.dateKey)] = { taskId: e.taskId, ts: e.completedAt, who: e.who };
     });
+  // Local doneLog: today AND any recent days not yet on server
   for (const [k, v] of Object.entries(doneLog)) {
     const dk = k.slice(k.lastIndexOf('__') + 2);
-    if (dk < cs) continue;
+    if (!validDk(dk) || dk < cs) continue;
     if (!byDate[dk]) byDate[dk] = {};
     if (!byDate[dk][k]) {
       byDate[dk][k] = { taskId: k.slice(0, k.lastIndexOf('__')), ts: v.ts, who: v.who };
