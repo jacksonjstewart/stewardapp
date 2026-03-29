@@ -981,6 +981,19 @@ function getNextDueDateKey(task, fromDk) {
   }
   return null;
 }
+// Walk backwards from fromDk to find the most recent due date.
+function getLastDueDateKey(task, fromDk) {
+  const maxDays = { daily: 2, weekly: 14, biweekly: 28, monthly: 62, biannual: 200, yearly: 400 };
+  const lookback = task.freq === 'nmonthly' ? (task.freqMonths || 1) * 32 : (maxDays[task.freq] || 30);
+  const [fy, fm, fd] = fromDk.split('-').map(Number);
+  const base = new Date(fy, fm-1, fd);
+  for (let i = 0; i <= lookback; i++) {
+    const d = new Date(base); d.setDate(base.getDate() - i);
+    const dk = getDateKey(d);
+    if (isDueOn(task, dk)) return dk;
+  }
+  return null;
+}
 
 // True if the task is within its get-ahead window for date dk but not due on dk.
 function isGetAheadOn(task, dk) {
@@ -1371,7 +1384,15 @@ function renderToday() {
   if (loadEl) loadEl.remove();
 
   const allDue    = tasks.filter(t => isDueToday(t, dk));
-  const overdue   = tasks.filter(t => !isDueToday(t, dk) && !isGetAheadEligible(t, dk) && getTaskRollingStatus(t) === 'missed');
+  // Only push infrequent tasks (monthly+) forward into today's overdue section.
+  // Weekly/biweekly tasks are flagged amber in Domains but don't clutter the Today list.
+  const PUSHFORWARD_FREQS = new Set(['monthly','nmonthly','biannual','yearly']);
+  const overdue   = tasks.filter(t =>
+    !isDueToday(t, dk) &&
+    !isGetAheadEligible(t, dk) &&
+    getTaskRollingStatus(t) === 'missed' &&
+    (t.type === 'once' || PUSHFORWARD_FREQS.has(t.freq))
+  );
   const otos      = allDue.filter(t => t.type === 'once');
   const recurring = allDue.filter(t => t.type !== 'once');
   const overdueOtos = overdue.filter(t => t.type === 'once');
@@ -1626,15 +1647,8 @@ function getTaskRollingStatus(task) {
     const p = proactiveDone[task.id];
     if (p.suppressUntil >= todayDk) return 'done';
   }
-  const maxDays = { daily: 2, weekly: 14, biweekly: 28, monthly: 62, biannual: 200, yearly: 400 };
-  const lookback = task.freq === 'nmonthly' ? (task.freqMonths || 1) * 32 : (maxDays[task.freq] || 30);
   // Walk backwards to find the most recent due date
-  let lastDk = null;
-  for (let i = 0; i <= lookback; i++) {
-    const d = new Date(today); d.setDate(today.getDate() - i);
-    const dk = getDateKey(d);
-    if (isDueOn(task, dk)) { lastDk = dk; break; }
-  }
+  const lastDk = getLastDueDateKey(task, todayDk);
   if (!lastDk) return 'gray';
   if (doneLog[doneKey(task.id, lastDk)]) return 'done';
   if (serverLogEntries.some(e => e.taskId === task.id && e.dateKey === lastDk)) return 'done';
@@ -1645,11 +1659,8 @@ function getTaskRollingStatus(task) {
     return k.slice(0, sep) === task.id && k.slice(sep + 2) > lastDk && k.slice(sep + 2) <= todayDk;
   }) || serverLogEntries.some(e => e.taskId === task.id && e.dateKey > lastDk && e.dateKey <= todayDk);
   if (hasLate) return 'done';
-  // No completion history at all → task is newly added; don't penalise with overdue
-  const hasAnyHistory =
-    Object.keys(doneLog).some(k => k.slice(0, k.lastIndexOf('__')) === task.id) ||
-    serverLogEntries.some(e => e.taskId === task.id);
-  if (!hasAnyHistory) return 'gray';
+  // Task has a past due date and was not completed → missed.
+  // (lastDk being non-null already confirms the task was due within the lookback window.)
   return 'missed';
 }
 
@@ -1667,15 +1678,9 @@ function isHardOverdue(task, dk) {
   }
   if (getTaskRollingStatus(task) !== 'missed') return false;
   if (!task.overdueGraceDays) return true;
-  const today   = edmontonNow();
-  const maxDays = { daily: 2, weekly: 14, biweekly: 28, monthly: 62, biannual: 200, yearly: 400 };
-  const lookback = task.freq === 'nmonthly' ? (task.freqMonths || 1) * 32 : (maxDays[task.freq] || 30);
-  for (let i = 1; i <= lookback; i++) {
-    const d = new Date(today); d.setDate(today.getDate() - i);
-    const lastDk = getDateKey(d);
-    if (isDueOn(task, lastDk)) return Math.round(daysBetween(lastDk, dk)) > task.overdueGraceDays;
-  }
-  return true;
+  const lastDk = getLastDueDateKey(task, dk);
+  if (!lastDk) return true;
+  return Math.round(daysBetween(lastDk, dk)) > task.overdueGraceDays;
 }
 
 function getIndicatorStatus(indicatorTasks, dk) {
@@ -1829,6 +1834,14 @@ function renderDomains() {
           const lastC = getLastCompleted(t.id);
           if (lastC) metaParts.push(fmtStampFull(lastC.ts, lastC.who, 'Last'));
           if (t.completionType === 'data' && lastC && lastC.dataValue) metaParts.push((t.dataLabel || 'Value') + ': ' + lastC.dataValue);
+          if (rs === 'missed') {
+            const missedDk = getLastDueDateKey(t, dk);
+            if (missedDk && missedDk < dk) {
+              const [,mm,md] = missedDk.split('-').map(Number);
+              const ord = (md%10===1&&md!==11)?'st':(md%10===2&&md!==12)?'nd':(md%10===3&&md!==13)?'rd':'th';
+              metaParts.push('Missed ' + MONS[mm-1] + ' ' + md + ord);
+            }
+          }
 
           // PROACTIVE / CLEAR buttons — show for all tasks not due today
           let actHTML = '';
