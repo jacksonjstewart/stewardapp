@@ -1791,8 +1791,9 @@ function getTaskRollingStatus(task) {
     return k.slice(0, sep) === task.id && k.slice(sep + 2) > lastDk && k.slice(sep + 2) <= todayDk;
   }) || serverLogEntries.some(e => e.taskId === task.id && e.dateKey > lastDk && e.dateKey <= todayDk);
   if (hasLate) return 'done';
-  // Task has a past due date and was not completed → missed.
-  // (lastDk being non-null already confirms the task was due within the lookback window.)
+  // If the most recent due date predates system launch, no completion was ever expected.
+  // Treat as gray — the task simply hasn't had its first tracked cycle yet.
+  if (lastDk < LAUNCH_DATE) return 'gray';
   return 'missed';
 }
 
