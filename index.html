@@ -791,7 +791,17 @@ function normalizeTask(raw) {
     seasonEnd:        (raw.seasonend         || '').trim(),   // 'MM-DD' e.g. '04-30'
     proactive:     (raw.proactive       || '').toLowerCase() === 'yes',
     getaheadDays:   raw.getaheaddays    ? parseInt(raw.getaheaddays) : 0,
+    // visibleTo: blank = everyone.  Single name or comma-separated: "Jackson" / "Jackson,Katelyn"
+    visibleTo:      (raw.visibleto || raw.visibleTo || '').trim(),
   };
+}
+
+// Returns true if the current user should see this task in the Today/personal views.
+// Domain health indicators deliberately bypass this — they always use all tasks.
+function isVisibleToUser(task) {
+  if (!task.visibleTo) return true;                        // blank → everyone
+  const allowed = task.visibleTo.split(',').map(s => s.trim().toLowerCase());
+  return allowed.includes((identity || '').toLowerCase());
 }
 
 // ── DUE-DATE LOGIC ────────────────────────────────────────────────────────────
@@ -1502,13 +1512,14 @@ function renderToday() {
   const loadEl    = document.getElementById('loading-state');
   if (loadEl) loadEl.remove();
 
-  const allDue    = tasks.filter(t => isDueToday(t, dk));
+  const allDue    = tasks.filter(t => isDueToday(t, dk) && isVisibleToUser(t));
   // Only push infrequent tasks (monthly+) forward into today's overdue section.
   // Weekly/biweekly tasks are flagged amber in Domains but don't clutter the Today list.
   const PUSHFORWARD_FREQS = new Set(['monthly','nmonthly','biannual','yearly']);
   const overdue   = tasks.filter(t =>
     !isDueToday(t, dk) &&
     !isGetAheadEligible(t, dk) &&
+    isVisibleToUser(t) &&
     getTaskRollingStatus(t) === 'missed' &&
     (t.type === 'once' || PUSHFORWARD_FREQS.has(t.freq))
   );
@@ -1516,12 +1527,13 @@ function renderToday() {
   const recurring = allDue.filter(t => t.type !== 'once');
   const overdueOtos = overdue.filter(t => t.type === 'once');
   const overdueRec  = overdue.filter(t => t.type !== 'once');
-  const getAheads     = tasks.filter(t => isGetAheadEligible(t, dk));
+  const getAheads     = tasks.filter(t => isGetAheadEligible(t, dk) && isVisibleToUser(t));
   // Get-ahead tasks already completed today — stay visible (stamped green) until midnight commit.
   // Use proactiveDone + getaheadDays directly; don't rely on isGetAheadOn forward-loop.
   const getAheadsDone = tasks.filter(t => {
     if ((t.getaheadDays || 0) <= 0) return false;   // must have get-ahead configured
     if (isDueOn(t, dk)) return false;                // actually due today, not early
+    if (!isVisibleToUser(t)) return false;           // respect per-user visibility
     const pd = proactiveDone[t.id];
     return pd && pd.suppressUntil >= dk;             // proactively completed and still covered
   });
@@ -2124,7 +2136,7 @@ function renderHistoryWeeks() {
 // ── PROGRESS RING ─────────────────────────────────────────────────────────────
 function updateRing() {
   const dk    = todayKey();
-  const tt    = tasks.filter(t => isDueToday(t, dk));
+  const tt    = tasks.filter(t => isDueToday(t, dk) && isVisibleToUser(t));
   const dc    = tt.filter(t => isDone(t.id, dk)).length;
   const total = tt.length;
   const pct   = total ? Math.round(dc/total*100) : 0;
@@ -2157,7 +2169,7 @@ function renderSectionBars(dk) {
   if (!c) return;
   let html = '';
   SECTIONS.forEach(sec => {
-    const st = tasks.filter(t => t.section === sec.key && isDueToday(t, dk));
+    const st = tasks.filter(t => t.section === sec.key && isDueToday(t, dk) && isVisibleToUser(t));
     if (!st.length) return;
     const done = st.filter(t => isDone(t.id, dk)).length;
     const pct  = Math.round(done / st.length * 100);
@@ -2171,8 +2183,8 @@ function renderSectionBars(dk) {
 }
 function updateTopBar() {
   const dk    = todayKey();
-  const total = tasks.filter(t => isDueToday(t, dk)).length;
-  const done  = tasks.filter(t => isDueToday(t, dk) && isDone(t.id, dk)).length;
+  const total = tasks.filter(t => isDueToday(t, dk) && isVisibleToUser(t)).length;
+  const done  = tasks.filter(t => isDueToday(t, dk) && isVisibleToUser(t) && isDone(t.id, dk)).length;
   const f     = document.getElementById('top-bar-fill');
   if (f) f.style.width = (total ? done/total*100 : 0) + '%';
 }
