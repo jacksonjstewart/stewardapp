@@ -32,6 +32,20 @@ function doGet(e) {
   }
 }
 
+// ─── DATE KEY NORMALISER ─────────────────────────────────────────────────────
+// Google Sheets getValues() can return Date objects instead of strings for cells
+// that look like dates (e.g. "2026-03-29" gets auto-converted).  This helper
+// always returns a plain YYYY-MM-DD string regardless of what Sheets stored.
+
+function normDk(val) {
+  if (!val) return '';
+  if (val instanceof Date) {
+    return Utilities.formatDate(val, 'America/Edmonton', 'yyyy-MM-dd');
+  }
+  // Trim any time component from ISO timestamp strings ("2026-03-29T07:00:00Z" → "2026-03-29")
+  return String(val).slice(0, 10);
+}
+
 // ─── COMMIT ──────────────────────────────────────────────────────────────────
 // Full REPLACE for a given dateKey — no stale rows, no bloat.
 
@@ -45,10 +59,11 @@ function commitEntries(entries, dateKey) {
   const headers  = data[0];
   const dateIdx  = headers.indexOf('dateKey');
 
-  // Prune rows older than 365 days, then replace today's rows
+  // Prune rows older than 365 days, then replace today's rows.
+  // normDk() handles cells that Sheets auto-converted from "YYYY-MM-DD" to Date objects.
   const cutoff = fmtDate(new Date(Date.now() - 365 * 86400000));
   for (let r = data.length - 1; r >= 1; r--) {
-    const rowDk = String(data[r][dateIdx]);
+    const rowDk = normDk(data[r][dateIdx]);
     if (rowDk < cutoff || rowDk === String(dk)) logSheet.deleteRow(r + 1);
   }
 
@@ -79,8 +94,15 @@ function getTodayState(dateKey) {
   const dateIdx  = headers.indexOf('dateKey');
   if (dateIdx < 0) return { entries: [] };
   const entries = data.slice(1)
-    .filter(row => row[dateIdx] === dateKey)
-    .map(row => { const o = {}; headers.forEach((h, i) => { o[h] = row[i]; }); return o; });
+    .filter(row => normDk(row[dateIdx]) === dateKey)   // normDk handles Date objects
+    .map(row => {
+      const o = {};
+      headers.forEach((h, i) => {
+        // Always return dateKey as a plain YYYY-MM-DD string so client comparisons work
+        o[h] = (h === 'dateKey') ? normDk(row[i]) : row[i];
+      });
+      return o;
+    });
   return { entries };
 }
 
@@ -100,8 +122,15 @@ function getHistory(days) {
   if (dateIdx < 0) return { entries: [] };
 
   const entries = data.slice(1)
-    .filter(row => String(row[dateIdx]) >= cutoffStr)
-    .map(row => { const o = {}; headers.forEach((h, i) => { o[h] = row[i]; }); return o; });
+    .filter(row => normDk(row[dateIdx]) >= cutoffStr)  // normDk handles Date objects
+    .map(row => {
+      const o = {};
+      headers.forEach((h, i) => {
+        // Always return dateKey as a plain YYYY-MM-DD string so client comparisons work
+        o[h] = (h === 'dateKey') ? normDk(row[i]) : row[i];
+      });
+      return o;
+    });
   return { entries };
 }
 
@@ -240,6 +269,9 @@ function getOrCreateLog(ss) {
   if (!sheet) {
     sheet = ss.insertSheet(LOG_TAB);
     sheet.appendRow(['taskId','name','section','emoji','completedAt','dateKey','who','dataValue']);
+    // Lock the dateKey column (F) to plain text so Sheets never auto-converts
+    // "2026-03-29" strings into Date objects on subsequent getValues() calls.
+    sheet.getRange('F:F').setNumberFormat('@STRING@');
   }
   return sheet;
 }

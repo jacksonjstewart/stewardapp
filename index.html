@@ -705,6 +705,7 @@ let histTab          = 'log';
 let histDays         = 30;
 let lastDateKey      = '';
 let softTimer        = null;
+let _initialHydrationDone = false;  // true after first server hydration; switches merge→full-replace
 // ── OPEN/EXPANDED STATE (survives re-renders caused by auto-sync) ─────────────
 let gaOpen        = false;  // GET AHEAD section in Today view
 let _lastProactiveMs = 0;  // timestamp of last proactive complete/clear (debounce guard)
@@ -1272,10 +1273,14 @@ function clearProactive(e, taskId) {
 function scheduleSoftCommit() {
   if (!API_URL) return;
   if (softTimer) clearTimeout(softTimer);
-  softTimer = setTimeout(pushToServer, 5000);
+  softTimer = setTimeout(pushToServer, 300);
 }
-async function pushToServer(dko) {
+let _pushInProgress = false;  // guard against concurrent pushes
+async function pushToServer(dko, keepalive = false) {
   if (!API_URL) return;
+  if (_pushInProgress) return;   // drop concurrent call — prevents duplicate rows
+  _pushInProgress = true;
+  softTimer = null;              // timer has fired (or was flushed on unload)
   const dk  = dko || todayKey();
   const sep = '__' + dk;
   // Build the complete set of completed tasks for this day
@@ -1290,8 +1295,13 @@ async function pushToServer(dko) {
     });
   // Always push — even if empty — so unchecking everything clears the server row
   try {
-    await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'commit', entries, dateKey: dk }) });
+    await fetch(API_URL, {
+      method: 'POST',
+      keepalive,          // true on beforeunload so the request survives page close
+      body: JSON.stringify({ action: 'commit', entries, dateKey: dk })
+    });
   } catch (e) { console.warn('Soft commit failed:', e); }
+  _pushInProgress = false;
 }
 
 // ── CSV SYNC ──────────────────────────────────────────────────────────────────
@@ -1322,50 +1332,83 @@ function setDeviceSyncState(active) {
 }
 async function hydrateTodayState() {
   if (!API_URL) return;
-  // Skip if a local change is pending commit — avoid overwriting uncommitted state
-  if (softTimer) return;
+  if (softTimer) return;  // local change in flight — skip to avoid overwrite race
+
   setDeviceSyncState(true);
   try {
     const res  = await fetch(API_URL + '?action=getTodayState&dateKey=' + todayKey());
     const data = await res.json();
     if (!data.entries) { setDeviceSyncState(false); return; }
     const dk = todayKey();
+    const isFirstLoad = !_initialHydrationDone;
 
-    // Snapshot which OTO tasks were completed locally today (before we replace)
-    const prevTodayOtos = new Set(
-      tasks.filter(t => t.type === 'once' && doneLog[doneKey(t.id, dk)]).map(t => t.id)
-    );
+    if (isFirstLoad) {
+      // ── INITIAL LOAD: additive merge ─────────────────────────────────────────
+      // localStorage is restored first (loadDoneLog already ran).  We only ADD
+      // server entries; we never remove local ones.  This protects uncommitted
+      // checks that were in localStorage but hadn't reached the server yet before
+      // the browser was refreshed/closed.  The 300ms debounce means any such
+      // entries are pushed to the server immediately after this merge.
+      const serverIds = new Set();
+      data.entries.forEach(e => {
+        if (!e.taskId || !e.completedAt) return;
+        const key = doneKey(e.taskId, dk);
+        if (!doneLog[key]) {
+          doneLog[key] = { ts: e.completedAt, who: e.who || '', dataValue: e.dataValue || '' };
+        }
+        serverIds.add(e.taskId);
+        const t = tasks.find(x => x.id === e.taskId);
+        if (t?.type === 'once' && !otoDone[e.taskId]) {
+          otoDone[e.taskId] = t.targetDate || 'permanent';
+        }
+        if (t && !isDueOn(t, dk) && !proactiveDone[t.id]) {
+          const nextDk = getNextDueDateKey(t, dk) || t.targetDate || dk;
+          proactiveDone[t.id] = { doneOn: dk, suppressUntil: nextDk };
+        }
+      });
+      // Push any local-only entries (uncommitted before refresh) to server now
+      const hasLocalOnly = Object.keys(doneLog).some(k => {
+        if (!k.endsWith('__' + dk)) return false;
+        const tid = k.slice(0, k.lastIndexOf('__'));
+        return !serverIds.has(tid);
+      });
+      if (hasLocalOnly) scheduleSoftCommit();
 
-    // Full-replace today's doneLog slice with authoritative server state.
-    // This handles un-checks from other devices (additive merge would leave ghost entries).
-    const nextLog = {};
-    Object.entries(doneLog).forEach(([k, v]) => {
-      if (k.slice(k.lastIndexOf('__') + 2) !== dk) nextLog[k] = v; // keep non-today entries
-    });
-    const serverIds = new Set();
-    data.entries.forEach(e => {
-      if (!e.taskId || !e.completedAt) return;
-      nextLog[doneKey(e.taskId, dk)] = { ts: e.completedAt, who: e.who || '', dataValue: e.dataValue || '' };
-      serverIds.add(e.taskId);
-      const t = tasks.find(x => x.id === e.taskId);
-      // Restore OTO cycle marker
-      if (t?.type === 'once' && !otoDone[e.taskId]) {
-        otoDone[e.taskId] = t.targetDate || 'permanent';
-      }
-      // Restore proactiveDone for GET-AHEAD completions (task not scheduled for today)
-      if (t && !isDueOn(t, dk) && !proactiveDone[t.id]) {
-        const nextDk = getNextDueDateKey(t, dk) || t.targetDate || dk;
-        proactiveDone[t.id] = { doneOn: dk, suppressUntil: nextDk };
-      }
-    });
-    // Remove OTO markers un-done on another device today
-    prevTodayOtos.forEach(id => { if (!serverIds.has(id)) delete otoDone[id]; });
-    // Remove proactiveDone entries cleared on another device today
-    Object.keys(proactiveDone).forEach(id => {
-      if (proactiveDone[id].doneOn === dk && !serverIds.has(id)) delete proactiveDone[id];
-    });
+    } else {
+      // ── BACKGROUND POLLS: full-replace ───────────────────────────────────────
+      // By the time this runs (≥2 min after page load), any check/uncheck has
+      // already been committed to the server (300ms debounce).  Full-replace is
+      // safe here and propagates unchecks from other devices correctly.
+      const prevTodayOtos = new Set(
+        tasks.filter(t => t.type === 'once' && doneLog[doneKey(t.id, dk)]).map(t => t.id)
+      );
+      const nextLog = {};
+      Object.entries(doneLog).forEach(([k, v]) => {
+        if (k.slice(k.lastIndexOf('__') + 2) !== dk) nextLog[k] = v;
+      });
+      const serverIds = new Set();
+      data.entries.forEach(e => {
+        if (!e.taskId || !e.completedAt) return;
+        nextLog[doneKey(e.taskId, dk)] = { ts: e.completedAt, who: e.who || '', dataValue: e.dataValue || '' };
+        serverIds.add(e.taskId);
+        const t = tasks.find(x => x.id === e.taskId);
+        if (t?.type === 'once' && !otoDone[e.taskId]) {
+          otoDone[e.taskId] = t.targetDate || 'permanent';
+        }
+        if (t && !isDueOn(t, dk) && !proactiveDone[t.id]) {
+          const nextDk = getNextDueDateKey(t, dk) || t.targetDate || dk;
+          proactiveDone[t.id] = { doneOn: dk, suppressUntil: nextDk };
+        }
+      });
+      prevTodayOtos.forEach(id => { if (!serverIds.has(id)) delete otoDone[id]; });
+      Object.keys(proactiveDone).forEach(id => {
+        if (proactiveDone[id].doneOn === dk && !serverIds.has(id)) delete proactiveDone[id];
+      });
+      doneLog = nextLog;
+    }
 
-    doneLog = nextLog;
+    _initialHydrationDone = true;
+
     saveDoneLog(); saveOtoDone(); saveProactiveDone();
     renderCurrentView(); updateRing(); updateTopBar();
   } catch {}
@@ -1376,7 +1419,38 @@ async function loadServerHistory(days) {
   try {
     const res  = await fetch(API_URL + '?action=getHistory&days=' + days);
     const data = await res.json();
-    if (data.entries) serverLogEntries = data.entries;
+    if (!data.entries) return;
+    serverLogEntries = data.entries;
+
+    // ── Belt-and-suspenders: backfill today's doneLog from history ───────────
+    // getTodayState can return stale/empty data if the GAS environment has reset.
+    // getHistory reads committed rows from the Sheet directly — much more reliable.
+    // Merge any of today's history entries into doneLog additively so completed
+    // tasks are always restored, even if getTodayState returned nothing.
+    const dk = todayKey();
+    let added = false;
+    data.entries
+      .filter(e => e.dateKey === dk && e.taskId && e.completedAt)
+      .forEach(e => {
+        const key = doneKey(e.taskId, dk);
+        if (!doneLog[key]) {
+          doneLog[key] = { ts: e.completedAt, who: e.who || '', dataValue: e.dataValue || '' };
+          // Restore OTO / proactive markers if needed
+          const t = tasks.find(x => x.id === e.taskId);
+          if (t?.type === 'once' && !otoDone[e.taskId]) {
+            otoDone[e.taskId] = t.targetDate || 'permanent';
+          }
+          if (t && !isDueOn(t, dk) && !proactiveDone[t.id]) {
+            const nextDk = getNextDueDateKey(t, dk) || t.targetDate || dk;
+            proactiveDone[t.id] = { doneOn: dk, suppressUntil: nextDk };
+          }
+          added = true;
+        }
+      });
+    if (added) {
+      saveDoneLog(); saveOtoDone(); saveProactiveDone();
+      renderCurrentView(); updateRing(); updateTopBar();
+    }
   } catch {}
 }
 function setStatus(msg, cls) {
@@ -2415,6 +2489,32 @@ async function init() {
   setInterval(checkMidnight,     60000);
   setInterval(syncFromSheet,     SYNC_MS);
   setInterval(hydrateTodayState, 2 * 60 * 1000); // multi-device sync every 2 min
+
+  // ── BROWSER CLOSE / NAVIGATION AWAY ──────────────────────────────────────────
+  // If there's a pending soft-commit when the page unloads, flush it immediately
+  // with keepalive:true so the browser sends the request even after the tab closes.
+  // This ensures completions reach the server before the 5 s debounce can fire,
+  // preventing data loss when the user closes the browser mid-session.
+  window.addEventListener('beforeunload', () => {
+    if (!softTimer || !API_URL) return;
+    clearTimeout(softTimer);
+    softTimer = null;
+    const dk  = todayKey();
+    const sep = '__' + dk;
+    const entries = Object.entries(doneLog)
+      .filter(([k]) => k.endsWith(sep))
+      .map(([k, v]) => {
+        const tid = k.slice(0, k.lastIndexOf('__'));
+        const t   = tasks.find(x => x.id === tid);
+        return { taskId: tid, name: t?.name || '', section: t?.section || '',
+                 emoji: t?.emoji || '', completedAt: v.ts, dateKey: dk, who: v.who,
+                 dataValue: v.dataValue || '' };
+      });
+    // keepalive:true — request outlives the page
+    try { fetch(API_URL, { method: 'POST', keepalive: true,
+                           body: JSON.stringify({ action: 'commit', entries, dateKey: dk }) }); } catch {}
+  });
+
   await Promise.all([loadSections(), syncFromSheet()]);
   await hydrateTodayState();
   loadServerHistory(90); // non-blocking background load
